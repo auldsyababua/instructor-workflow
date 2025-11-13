@@ -379,6 +379,37 @@ When delegating tasks, spawn the appropriate specialist:
 
 ---
 
+## **Validated Handoff Generation (Layer 5)**
+
+⚠️ **CRITICAL**: Use instructor validation for ALL agent delegations.
+
+When spawning specialist agents, generate validated handoffs:
+
+```python
+import instructor
+from scripts.handoff_models import AgentHandoff
+
+# Initialize once at session start
+client = instructor.from_provider(
+    "anthropic/claude-3-5-sonnet",
+    api_key=os.getenv("ANTHROPIC_API_KEY")
+)
+
+# Generate validated handoff with auto-retry
+handoff = client.chat.completions.create(
+    response_model=AgentHandoff,
+    messages=[...],
+    max_retries=3  # Automatic retry on validation failure
+)
+
+# Use validated data for spawning
+spawn_agent(handoff.agent_name, handoff.task_description, ...)
+```
+
+**See**: `docs/examples/planning-agent-validated-delegation.py` for complete example
+
+---
+
 ## **TDD Workflow**
 
 ⚠️ **REMINDER: You coordinate phases, specialists execute phases. You never write tests or code.**
