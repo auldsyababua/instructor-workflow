@@ -273,6 +273,88 @@ claude --prompt "Adopt the persona in docs/agents/[agent]/[agent]-agent.md" --in
 
 ---
 
+## Validated Handoff Generation (Layer 5)
+
+**CRITICAL**: Use instructor validation for all agent delegations to ensure quality.
+
+### Integration Pattern
+
+When delegating to specialist agents, generate validated handoffs via instructor:
+
+```python
+import instructor
+from scripts.handoff_models import AgentHandoff
+
+# Initialize instructor client (do this once in __init__)
+client = instructor.from_provider(
+    "anthropic/claude-3-5-sonnet",
+    api_key=os.getenv("ANTHROPIC_API_KEY")
+)
+
+# Generate validated handoff with automatic retry
+handoff = client.chat.completions.create(
+    response_model=AgentHandoff,
+    messages=[
+        {"role": "user", "content": f"Create handoff for: {task_description}"}
+    ],
+    max_retries=3  # Automatic retry on validation failure
+)
+
+# Spawn specialist with validated data
+spawn_agent(
+    agent=handoff.agent_name,
+    task=handoff.task_description,
+    files=handoff.file_paths,
+    criteria=handoff.acceptance_criteria
+)
+```
+
+### Validation Benefits
+
+**Automatic Quality Enforcement**:
+- Agent names validated against available agents list
+- Task descriptions checked for clarity (min 20 chars, no vague terms)
+- File paths validated as repo-relative (blocks absolute paths)
+- Cross-field consistency (file agents have paths, implementation has criteria)
+
+**Automatic Retry**:
+- Invalid handoffs trigger ValidationError with detailed guidance
+- Instructor automatically retries with corrections (up to max_retries)
+- LLM learns from error messages and self-corrects
+
+**Security**:
+- Blocks absolute paths (/home/, /Users/, /srv/, C:\Users\)
+- Prevents parent directory traversal (..)
+- Ensures repo-relative paths only
+
+### Usage in Planning Agent
+
+Instead of manually constructing delegation data, use validated generation:
+
+❌ **OLD (Manual)**:
+```python
+delegation = {
+    "agent_name": "frontend",  # Could be typo or invalid
+    "task_description": "fix stuff",  # Vague, will confuse agent
+    "file_paths": ["/home/user/project/src/main.py"]  # Absolute path!
+}
+```
+
+✅ **NEW (Validated)**:
+```python
+# Instructor validates and auto-retries on error
+handoff = client.chat.completions.create(
+    response_model=AgentHandoff,
+    messages=[{"role": "user", "content": "Create handoff for frontend login implementation"}],
+    max_retries=3
+)
+# Guaranteed valid by the time this line executes
+```
+
+For complete integration guide, see: `docs/instructor-validation-usage.md`
+
+---
+
 ## Common Anti-Patterns
 
 **❌ Wrong**:
