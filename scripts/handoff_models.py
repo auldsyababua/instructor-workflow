@@ -109,7 +109,7 @@ class AgentHandoff(BaseModel):
         description=(
             "Repo-relative file paths agent should work with. "
             "Examples: 'src/main.py', 'tests/test_api.py'. "
-            "DO NOT use absolute paths (/home/, /Users/, C:\\Users\\)."
+            "DO NOT use absolute paths (/home/, /Users/, /srv/, C:\\Users\\)."
         )
     )
 
