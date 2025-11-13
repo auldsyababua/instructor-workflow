@@ -239,7 +239,7 @@ class AgentHandoff(BaseModel):
         """
         for path in v:
             # Reject absolute paths with hardcoded user directories
-            forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/', '/srv/']
+            forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/']
             for prefix in forbidden_prefixes:
                 if path.startswith(prefix):
                     raise ValueError(
