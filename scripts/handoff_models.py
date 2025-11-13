@@ -231,7 +231,7 @@ class AgentHandoff(BaseModel):
         Validate file paths are repo-relative and secure.
 
         Checks for:
-        - Absolute paths with hardcoded user directories
+        - Absolute paths with hardcoded user or server directories
         - Parent directory traversal (..)
         - Mixed path separators
 
@@ -245,12 +245,12 @@ class AgentHandoff(BaseModel):
             ValueError: If any path is absolute, contains traversal, or has mixed separators
         """
         for path in v:
-            # Reject absolute paths with hardcoded user directories
+            # Reject absolute paths with hardcoded user or server directories
             forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/', '/srv/']
             for prefix in forbidden_prefixes:
                 if path.startswith(prefix):
                     raise ValueError(
-                        f"Path '{path}' contains hardcoded user directory.\n\n"
+                        f"Path '{path}' contains hardcoded user or server directory.\n\n"
                         "Use repo-relative paths instead:\n"
                         "  ❌ '/home/user/project/src/main.py'\n"
                         "  ✅ 'src/main.py'\n\n"

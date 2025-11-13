@@ -260,7 +260,7 @@ class TestInvalidFilePaths:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "hardcoded user directory" in error_msg.lower()
+        assert "hardcoded user or server directory" in error_msg.lower()
         assert "/home/user" in error_msg
 
     def test_absolute_path_windows_users(self):
@@ -275,7 +275,7 @@ class TestInvalidFilePaths:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "hardcoded user directory" in error_msg.lower()
+        assert "hardcoded user or server directory" in error_msg.lower()
 
     def test_absolute_path_srv(self):
         """Test absolute path with /srv/ prefix fails."""
@@ -289,7 +289,7 @@ class TestInvalidFilePaths:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "hardcoded user directory" in error_msg.lower()
+        assert "hardcoded user or server directory" in error_msg.lower()
 
     def test_parent_directory_traversal(self):
         """Test parent directory traversal (..) fails."""
