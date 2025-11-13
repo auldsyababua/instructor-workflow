@@ -1,0 +1,601 @@
+"""
+IW Agent Handoff Validation Models
+
+Location: /srv/projects/instructor-workflow/scripts/handoff_models.py
+
+Usage:
+    from scripts.handoff_models import AgentHandoff, validate_handoff
+
+    # Via instructor client
+    client = instructor.from_provider("anthropic/claude-3-5-sonnet")
+    handoff = client.chat.completions.create(
+        response_model=AgentHandoff,
+        messages=[...],
+        max_retries=3
+    )
+
+    # Direct validation
+    handoff = validate_handoff({
+        "agent_name": "action",
+        "task_description": "Implement auth middleware",
+        ...
+    })
+"""
+
+from pydantic import BaseModel, Field, field_validator, model_validator
+from typing import Optional
+from pathlib import Path
+import os
+import re
+
+
+# Module-level constant for available agents (single source of truth)
+_AVAILABLE_AGENTS = {
+    'action': 'General implementation (deprecated, prefer specialized agents)',
+    'frontend': 'React/Vue/Next.js UI implementation',
+    'backend': 'API development, database operations',
+    'devops': 'Infrastructure, deployment, CI/CD',
+    'debug': 'Root cause analysis, troubleshooting',
+    'seo': 'Technical SEO, meta tags, structured data',
+    'qa': 'Testing and validation (deprecated, use test-writer/test-auditor)',
+    'test-writer': 'Write tests before implementation (TDD)',
+    'test-auditor': 'Audit test quality, catch happy-path bias',
+    'research': 'Information gathering, Linear issue creation',
+    'tracking': 'Linear updates, git operations, PR creation',
+    'browser': 'GUI operations, browser automation'
+}
+
+
+class AgentHandoff(BaseModel):
+    """
+    Agent handoff validation model for IW (Instructor Workflow).
+
+    Validates Planning Agent delegations to specialist agents with:
+    - Agent name validation (from available agents list)
+    - Task description quality checks
+    - File path validation (repo-relative, no hardcoded paths)
+    - Acceptance criteria requirements
+    - Cross-field consistency validation
+    """
+
+    agent_name: str = Field(
+        description=(
+            "Target agent name. Available agents: "
+            "action (general implementation), "
+            "frontend (React/Vue UI), "
+            "backend (API/database), "
+            "devops (infrastructure/CI/CD), "
+            "debug (troubleshooting), "
+            "seo (technical SEO), "
+            "qa (testing/validation), "
+            "research (information gathering), "
+            "tracking (Linear/git operations), "
+            "browser (GUI automation)"
+        )
+    )
+
+    task_description: str = Field(
+        min_length=20,
+        description=(
+            "Clear, specific task description. Include: "
+            "WHAT to do, WHERE to do it, HOW to verify. "
+            "Example: 'Implement JWT auth middleware in src/middleware/auth.ts, "
+            "add unit tests, ensure 401 on invalid token.'"
+        )
+    )
+
+    acceptance_criteria: list[str] = Field(
+        default=[],
+        description=(
+            "List of acceptance criteria for task completion. "
+            "Each criterion should be testable/verifiable. "
+            "Example: '[ ] Middleware validates JWT tokens', "
+            "'[ ] Returns 401 on invalid token', "
+            "'[ ] Unit tests cover all auth flows'"
+        )
+    )
+
+    context: Optional[str] = Field(
+        default=None,
+        description=(
+            "Additional context for agent (optional). "
+            "Include: related issues, dependencies, constraints, "
+            "research findings, or special considerations."
+        )
+    )
+
+    file_paths: list[str] = Field(
+        default=[],
+        description=(
+            "Repo-relative file paths agent should work with. "
+            "Examples: 'src/main.py', 'tests/test_api.py'. "
+            "DO NOT use absolute paths (/home/, /Users/, /srv/, C:\\Users\\)."
+        )
+    )
+
+    blockers: Optional[str] = Field(
+        default=None,
+        description=(
+            "Known blockers or dependencies (optional). "
+            "Example: 'Waiting on API keys', 'Blocked by LAW-123'"
+        )
+    )
+
+    deliverables: list[str] = Field(
+        default=[],
+        description=(
+            "Expected deliverables from agent (optional). "
+            "Example: 'auth.ts middleware', 'unit tests', 'API documentation'"
+        )
+    )
+
+    # --- FIELD VALIDATORS ---
+
+    @field_validator('agent_name')
+    @classmethod
+    def validate_agent_name(cls, v: str) -> str:
+        """
+        Validate agent name against available agents list.
+
+        Ensures agent name is from the valid set of specialist agents.
+        Provides detailed error message with available agents if invalid.
+
+        Args:
+            v: Agent name to validate
+
+        Returns:
+            str: Validated and normalized agent name (lowercase)
+
+        Raises:
+            ValueError: If agent name not in valid agents list
+        """
+        v_lower = v.lower().strip()
+        if v_lower not in _AVAILABLE_AGENTS:
+            available = '\n'.join(f"  - {name}: {desc}" for name, desc in _AVAILABLE_AGENTS.items())
+            raise ValueError(
+                f"Invalid agent name '{v}'. Available agents:\n{available}\n\n"
+                "Choose agent based on task type:\n"
+                "  - UI work → 'frontend'\n"
+                "  - API/database → 'backend'\n"
+                "  - Testing → 'test-writer' or 'test-auditor'\n"
+                "  - Research → 'research'\n"
+                "  - Git/Linear → 'tracking'"
+            )
+
+        return v_lower
+
+    @field_validator('task_description')
+    @classmethod
+    def validate_task_description(cls, v: str) -> str:
+        """
+        Validate task description is clear and specific.
+
+        Checks for:
+        - Minimum length (20 characters)
+        - Vague terms that indicate unclear requirements
+        - Provides guidance on writing clear task descriptions
+
+        Args:
+            v: Task description to validate
+
+        Returns:
+            str: Validated task description
+
+        Raises:
+            ValueError: If description too short or contains vague terms
+        """
+        if len(v) < 20:
+            raise ValueError(
+                f"Task description too short ({len(v)} chars). "
+                "Provide detailed description (minimum 20 characters).\n\n"
+                "Good description includes:\n"
+                "  - WHAT: Specific action to take\n"
+                "  - WHERE: Files or locations to modify\n"
+                "  - HOW: Verification method or acceptance criteria\n\n"
+                "Example: 'Implement JWT authentication middleware in src/middleware/auth.ts, "
+                "add unit tests in tests/auth.test.ts, ensure 401 response on invalid token.'"
+            )
+
+        # Check for vague descriptions
+        vague_patterns = [
+            ('do something', 'Specify exactly what to do'),
+            ('fix stuff', 'Describe what to fix and how'),
+            ('update things', 'List specific files and changes'),
+            ('make it work', 'Define working criteria'),
+            ('handle it', 'Describe handling approach'),
+            ('deal with', 'Specify action to take')
+        ]
+
+        v_lower = v.lower()
+        found_vague = []
+        for pattern, suggestion in vague_patterns:
+            if pattern in v_lower:
+                found_vague.append((pattern, suggestion))
+
+        if found_vague:
+            vague_list = '\n'.join(f"  - '{pattern}': {suggestion}" for pattern, suggestion in found_vague)
+            raise ValueError(
+                f"Task description contains vague patterns:\n{vague_list}\n\n"
+                "Be specific:\n"
+                "  ❌ 'Fix the auth stuff'\n"
+                "  ✅ 'Fix JWT token validation in src/middleware/auth.ts "
+                "to return 401 when token signature is invalid'"
+            )
+
+        return v
+
+    @field_validator('file_paths')
+    @classmethod
+    def validate_file_paths(cls, v: list[str]) -> list[str]:
+        """
+        Validate file paths are repo-relative and secure.
+
+        Checks for:
+        - Absolute paths with hardcoded user or server directories
+        - Parent directory traversal (..)
+        - Mixed path separators
+
+        Args:
+            v: List of file paths to validate
+
+        Returns:
+            list[str]: Validated file paths
+
+        Raises:
+            ValueError: If any path is absolute, contains traversal, or has mixed separators
+        """
+        for path in v:
+            # Reject absolute paths with hardcoded user or server directories
+            forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/', '/srv/']
+            for prefix in forbidden_prefixes:
+                if path.startswith(prefix):
+                    raise ValueError(
+                        f"Path '{path}' contains hardcoded user or server directory.\n\n"
+                        "Use repo-relative paths instead:\n"
+                        "  ❌ '/home/user/project/src/main.py'\n"
+                        "  ✅ 'src/main.py'\n\n"
+                        "  ❌ 'C:\\Users\\user\\project\\tests\\test.py'\n"
+                        "  ✅ 'tests/test.py'\n\n"
+                        "Agent will resolve paths relative to project root."
+                    )
+
+            # Reject parent directory traversal (security)
+            if '..' in path:
+                raise ValueError(
+                    f"Path '{path}' contains parent directory traversal (..).\n\n"
+                    "Use direct repo-relative paths only:\n"
+                    "  ❌ '../../../etc/passwd'\n"
+                    "  ❌ 'src/../../config/secrets.json'\n"
+                    "  ✅ 'src/main.py'\n"
+                    "  ✅ 'config/app.json'\n\n"
+                    "Security: Parent traversal blocked to prevent path injection."
+                )
+
+            # Check for common path separators (accept both)
+            if '\\' in path and '/' in path:
+                raise ValueError(
+                    f"Path '{path}' mixes path separators.\n\n"
+                    "Use consistent separators:\n"
+                    "  ✅ 'src/components/Button.tsx' (forward slashes)\n"
+                    "  ✅ 'src\\components\\Button.tsx' (backslashes)\n"
+                    "  ❌ 'src/components\\Button.tsx' (mixed)\n\n"
+                    "Prefer forward slashes (/) for cross-platform compatibility."
+                )
+
+        return v
+
+    @field_validator('acceptance_criteria')
+    @classmethod
+    def validate_acceptance_criteria(cls, v: list[str]) -> list[str]:
+        """
+        Validate acceptance criteria are testable.
+
+        Checks for:
+        - Minimum length (5 characters per criterion)
+        - Vague criteria that aren't testable
+
+        Args:
+            v: List of acceptance criteria to validate
+
+        Returns:
+            list[str]: Validated acceptance criteria
+
+        Raises:
+            ValueError: If criteria too short or vague
+        """
+        if not v:
+            return v  # Optional field, empty list is valid
+
+        for criterion in v:
+            if len(criterion.strip()) < 5:
+                raise ValueError(
+                    f"Acceptance criterion too short: '{criterion}'\n\n"
+                    "Each criterion should be specific and testable:\n"
+                    "  ❌ 'Works'\n"
+                    "  ❌ 'Fixed'\n"
+                    "  ✅ '[ ] Middleware validates JWT signature'\n"
+                    "  ✅ '[ ] Returns 401 on expired token'\n"
+                    "  ✅ '[ ] Unit tests achieve 90% code coverage'"
+                )
+
+            # Check for vague criteria
+            vague_terms = ['works', 'done', 'fixed', 'complete', 'good']
+            if criterion.lower().strip() in vague_terms:
+                raise ValueError(
+                    f"Acceptance criterion too vague: '{criterion}'\n\n"
+                    "Make criteria testable and specific:\n"
+                    "  ❌ 'Auth works'\n"
+                    "  ✅ 'Auth middleware returns 200 for valid tokens'\n\n"
+                    "  ❌ 'Tests pass'\n"
+                    "  ✅ 'All unit tests pass with >90% coverage'"
+                )
+
+        return v
+
+    # --- MODEL VALIDATORS ---
+
+    @model_validator(mode='after')
+    def validate_consistency(self):
+        """
+        Validate cross-field consistency.
+
+        Checks:
+        - Research/tracking agents don't have file_paths (SPECIFIC RULES FIRST)
+        - Test-writer agent has acceptance_criteria (SPECIFIC RULES FIRST)
+        - File-modifying agents have file_paths specified (GENERAL RULES SECOND)
+        - Implementation tasks have acceptance_criteria (GENERAL RULES SECOND)
+
+        Returns:
+            Self: Validated model instance
+
+        Raises:
+            ValueError: If cross-field validation fails
+        """
+
+        # SPECIFIC RULES FIRST (agent-specific constraints)
+        # These must be checked before general rules to avoid masking errors
+
+        # Research agent should NOT have file paths (doesn't modify files)
+        if self.agent_name == 'research' and self.file_paths:
+            raise ValueError(
+                "research agent should NOT have file_paths.\n\n"
+                "Research agent gathers information and creates Linear issues.\n"
+                "It does not modify files.\n\n"
+                "Remove file_paths field or choose different agent:\n"
+                "  - To modify docs → 'action' agent\n"
+                "  - To update code → 'frontend', 'backend', or 'devops'\n"
+                "  - To investigate only → 'research' (no file_paths)"
+            )
+
+        # Tracking agent should NOT have file paths (git ops only)
+        if self.agent_name == 'tracking' and self.file_paths:
+            raise ValueError(
+                "tracking agent should NOT have file_paths.\n\n"
+                "Tracking agent handles:\n"
+                "  - Linear issue updates\n"
+                "  - Git operations (commit, push, PR)\n"
+                "  - Documentation archiving\n\n"
+                "It does not modify source files.\n\n"
+                "Remove file_paths or choose different agent:\n"
+                "  - To modify files → 'action', 'frontend', 'backend', etc.\n"
+                "  - To handle git/Linear → 'tracking' (no file_paths)"
+            )
+
+        # Test-writer agent should have acceptance criteria (defines test cases)
+        if self.agent_name == 'test-writer' and not self.acceptance_criteria:
+            raise ValueError(
+                "test-writer agent requires acceptance_criteria.\n\n"
+                "Acceptance criteria define what tests should verify:\n"
+                "  [ ] Valid tokens pass authentication\n"
+                "  [ ] Invalid tokens return 401\n"
+                "  [ ] Expired tokens return 403\n"
+                "  [ ] Missing tokens return 401\n\n"
+                "Test-writer uses these to write test cases."
+            )
+
+        # GENERAL RULES SECOND (role-based constraints)
+        # These are checked after specific rules to ensure proper error reporting
+
+        # File-modifying agents should have file paths
+        file_agents = ['action', 'frontend', 'backend', 'devops', 'debug', 'seo']
+        if self.agent_name in file_agents:
+            if not self.file_paths:
+                raise ValueError(
+                    f"Agent '{self.agent_name}' requires file_paths.\n\n"
+                    f"Specify which files this agent should work with:\n"
+                    "  Example for frontend: ['src/components/Auth.tsx', 'src/hooks/useAuth.ts']\n"
+                    "  Example for backend: ['src/api/auth.py', 'src/models/user.py']\n"
+                    "  Example for tests: ['tests/test_auth.py']\n\n"
+                    "If agent doesn't know which files yet, use pattern: ['src/**/*.py']"
+                )
+
+        # Implementation tasks should have acceptance criteria
+        # Use word boundary regex to avoid false positives (e.g., "implementation" contains "implement")
+        impl_keywords = ['implement', 'create', 'build', 'develop', 'add', 'write']
+        desc_lower = self.task_description.lower()
+        has_impl = any(re.search(r'\b' + re.escape(kw) + r'\b', desc_lower) for kw in impl_keywords)
+
+        if has_impl and not self.acceptance_criteria:
+            raise ValueError(
+                "Implementation tasks require acceptance_criteria.\n\n"
+                "Define how to verify task completion:\n"
+                "  ❌ Task description only\n"
+                "  ✅ Task description + acceptance criteria\n\n"
+                "Example acceptance criteria:\n"
+                "  [ ] Middleware validates JWT signature\n"
+                "  [ ] Returns 401 on invalid token\n"
+                "  [ ] Returns 403 on expired token\n"
+                "  [ ] Unit tests cover all auth flows\n"
+                "  [ ] Integration tests verify end-to-end auth"
+            )
+
+        return self
+
+
+# --- VALIDATION FUNCTIONS ---
+
+def validate_handoff(data: dict) -> AgentHandoff:
+    """
+    Validate handoff data and return AgentHandoff model.
+
+    Args:
+        data: Dictionary with handoff fields
+
+    Returns:
+        AgentHandoff: Validated handoff model
+
+    Raises:
+        ValidationError: If validation fails with detailed error messages
+
+    Example:
+        >>> handoff = validate_handoff({
+        ...     "agent_name": "frontend",
+        ...     "task_description": "Implement login form in src/components/Login.tsx",
+        ...     "file_paths": ["src/components/Login.tsx"],
+        ...     "acceptance_criteria": [
+        ...         "[ ] Form validates email format",
+        ...         "[ ] Form submits to /api/auth/login",
+        ...         "[ ] Error messages display on failure"
+        ...     ]
+        ... })
+    """
+    return AgentHandoff(**data)
+
+
+def get_available_agents() -> dict[str, str]:
+    """
+    Get dictionary of available agent names and descriptions.
+
+    Returns:
+        dict: Agent name → description mapping
+
+    Example:
+        >>> agents = get_available_agents()
+        >>> print(agents['frontend'])
+        'React/Vue/Next.js UI implementation'
+    """
+    return _AVAILABLE_AGENTS.copy()
+
+
+# --- EXAMPLE USAGE ---
+
+if __name__ == "__main__":
+    print("=== IW Agent Handoff Validation Examples ===\n")
+
+    # Example 1: Valid handoff
+    print("Example 1: Valid Frontend Handoff")
+    print("-" * 50)
+    valid_handoff = {
+        "agent_name": "frontend",
+        "task_description": (
+            "Implement JWT authentication form in src/components/Login.tsx. "
+            "Form should validate email format, submit to /api/auth/login, "
+            "and display error messages on failure."
+        ),
+        "file_paths": [
+            "src/components/Login.tsx",
+            "src/hooks/useAuth.ts",
+            "tests/Login.test.tsx"
+        ],
+        "acceptance_criteria": [
+            "[ ] Form validates email format client-side",
+            "[ ] Form submits credentials to /api/auth/login",
+            "[ ] Error messages display for invalid credentials",
+            "[ ] Success redirects to dashboard",
+            "[ ] Unit tests cover all form interactions"
+        ],
+        "context": "Integrate with existing auth API from backend team (LAW-123)"
+    }
+
+    try:
+        handoff = validate_handoff(valid_handoff)
+        print("✅ Valid handoff:")
+        print(f"  Agent: {handoff.agent_name}")
+        print(f"  Task: {handoff.task_description[:50]}...")
+        print(f"  Files: {len(handoff.file_paths)} files")
+        print(f"  Criteria: {len(handoff.acceptance_criteria)} criteria")
+        print()
+    except Exception as e:
+        print(f"❌ Validation failed: {e}\n")
+
+    # Example 2: Invalid handoff (multiple errors)
+    print("Example 2: Invalid Handoff (Multiple Errors)")
+    print("-" * 50)
+    invalid_handoff = {
+        "agent_name": "invalid-agent",  # ❌ Not in valid agents list
+        "task_description": "fix stuff",  # ❌ Too vague and too short
+        "file_paths": ["/home/user/project/src/main.py"],  # ❌ Absolute path
+    }
+
+    try:
+        validate_handoff(invalid_handoff)
+        print("✅ Validation passed (unexpected!)")
+    except Exception as e:
+        print("❌ Expected validation failure:")
+        print(f"  Error: {str(e)[:200]}...")
+        print()
+
+    # Example 3: Valid backend handoff
+    print("Example 3: Valid Backend Handoff")
+    print("-" * 50)
+    backend_handoff = {
+        "agent_name": "backend",
+        "task_description": (
+            "Implement JWT authentication middleware in src/middleware/auth.py "
+            "that validates Bearer tokens, verifies signatures using RS256, "
+            "checks expiration, and returns appropriate HTTP status codes."
+        ),
+        "file_paths": [
+            "src/middleware/auth.py",
+            "src/utils/jwt.py",
+            "tests/test_auth_middleware.py"
+        ],
+        "acceptance_criteria": [
+            "[ ] Middleware extracts Bearer token from Authorization header",
+            "[ ] Middleware validates token signature using public key",
+            "[ ] Returns 401 for invalid token",
+            "[ ] Returns 403 for expired token",
+            "[ ] Unit tests cover all success and failure paths"
+        ],
+        "context": "Use PyJWT library (version 2.8.0+). Public key in config/jwt_public_key.pem.",
+        "deliverables": [
+            "auth.py middleware module",
+            "jwt.py utility functions",
+            "Unit tests with 90%+ coverage"
+        ]
+    }
+
+    try:
+        handoff = validate_handoff(backend_handoff)
+        print("✅ Valid handoff:")
+        print(f"  Agent: {handoff.agent_name}")
+        print(f"  Task: {handoff.task_description[:60]}...")
+        print(f"  Files: {len(handoff.file_paths)} files")
+        print(f"  Criteria: {len(handoff.acceptance_criteria)} criteria")
+        print(f"  Deliverables: {len(handoff.deliverables)} deliverables")
+        print()
+    except Exception as e:
+        print(f"❌ Validation failed: {e}\n")
+
+    # Example 4: Invalid research handoff (wrong agent for file modification)
+    print("Example 4: Invalid Research Handoff (File Modification)")
+    print("-" * 50)
+    invalid_research = {
+        "agent_name": "research",
+        "task_description": "Research authentication patterns and update docs/auth-patterns.md",
+        "file_paths": ["docs/auth-patterns.md"]  # ❌ Research agent shouldn't modify files
+    }
+
+    try:
+        validate_handoff(invalid_research)
+        print("✅ Validation passed (unexpected!)")
+    except Exception as e:
+        print("❌ Expected validation failure:")
+        print(f"  Error: {str(e)[:200]}...")
+        print()
+
+    print("=== Available Agents ===")
+    print("-" * 50)
+    agents = get_available_agents()
+    for name, desc in agents.items():
+        print(f"  {name:15} → {desc}")
