@@ -1,0 +1,42 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Planning Agent - Coordinator with selective write access",
+  "permissions": {
+    "comment": "Planning Agent can write to handoffs/ and .project-context.md only",
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "TodoWrite",
+      "Task",
+      "Write(handoffs/**)",
+      "Write(.project-context.md)",
+      "Bash(read-only: ls, cat, grep, find)"
+    ],
+    "deny": [
+      "Write(src/**)",
+      "Write(agents/**)",
+      "Write(scripts/**)",
+      "Edit(src/**)",
+      "Edit(agents/**)",
+      "Bash(rm :*)",
+      "Bash(mv :*)",
+      "Bash(git commit)",
+      "Bash(git push)",
+      "mcp__github__create_*",
+      "mcp__github__update_*",
+      "mcp__github__push_*",
+      "mcp__linear-server__create_*",
+      "mcp__linear-server__update_*"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/planning/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

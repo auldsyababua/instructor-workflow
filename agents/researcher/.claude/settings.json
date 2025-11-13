@@ -1,0 +1,29 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Researcher Agent - Research and documentation with selective write access",
+  "permissions": {
+    "comment": "Researcher Agent can write to handoffs/ and docs/ for research artifacts",
+    "allow": [
+      "Read",
+      "Grep",
+      "Glob",
+      "Write(handoffs/**)",
+      "Write(docs/.scratch/**)",
+      "Write(docs/research/**)",
+      "WebSearch",
+      "WebFetch"
+    ],
+    "deny": [
+      "Write(src/**)",
+      "Write(agents/**)",
+      "Write(scripts/**)",
+      "Edit(src/**)",
+      "Edit(agents/**)",
+      "Bash(rm :*)",
+      "Bash(mv :*)",
+      "mcp__github__push_*",
+      "mcp__linear-server__create_*",
+      "mcp__linear-server__update_*"
+    ]
+  }
+}

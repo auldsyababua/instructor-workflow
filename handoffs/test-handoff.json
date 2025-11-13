@@ -1,0 +1,117 @@
+{
+  "handoff_id": "handoff_001_planning_to_action",
+  "timestamp": "2025-11-13T10:30:00Z",
+  "from_agent": "planning-agent",
+  "to_agent": "action-agent",
+  "status": "pending",
+  "context": {
+    "issue_id": "TST-001",
+    "issue_title": "Implement user authentication endpoint",
+    "priority": "high",
+    "estimated_complexity": "medium"
+  },
+  "deliverables": {
+    "tasks": [
+      {
+        "task_id": "task_001",
+        "description": "Create POST /api/auth/login endpoint",
+        "file_paths": [
+          "src/api/routes/auth.py"
+        ],
+        "dependencies": [],
+        "acceptance_criteria": [
+          "Endpoint accepts email and password",
+          "Returns JWT token on successful authentication",
+          "Returns 401 on invalid credentials",
+          "Logs authentication attempts"
+        ]
+      },
+      {
+        "task_id": "task_002",
+        "description": "Implement JWT token generation utility",
+        "file_paths": [
+          "src/utils/jwt.py"
+        ],
+        "dependencies": [
+          "task_001"
+        ],
+        "acceptance_criteria": [
+          "Generates valid JWT with user_id claim",
+          "Sets appropriate expiration time (1 hour)",
+          "Uses secure signing algorithm (HS256)"
+        ]
+      }
+    ],
+    "files_to_modify": [
+      "src/api/routes/auth.py",
+      "src/utils/jwt.py",
+      "src/config/settings.py"
+    ],
+    "files_to_create": [
+      "src/middleware/auth.py"
+    ],
+    "constraints": [
+      "Must not modify test files (QA Agent ownership)",
+      "Must use existing database models in src/models/user.py",
+      "Must follow existing API response format",
+      "Environment variables for JWT_SECRET must use placeholder"
+    ]
+  },
+  "validation_requirements": {
+    "must_pass_before_handoff": [
+      "All acceptance criteria met",
+      "No syntax errors",
+      "Code follows project conventions",
+      "Security requirements met (no hardcoded secrets)"
+    ],
+    "ready_for_qa": true,
+    "qa_handoff_context": {
+      "test_scenarios": [
+        "Valid login with correct credentials",
+        "Invalid login with wrong password",
+        "Invalid login with non-existent user",
+        "Token expiration handling",
+        "Malformed request handling"
+      ],
+      "edge_cases": [
+        "Empty email/password fields",
+        "SQL injection attempts in credentials",
+        "Concurrent login attempts",
+        "Token reuse after expiration"
+      ]
+    }
+  },
+  "research_findings": {
+    "existing_patterns": [
+      {
+        "pattern": "API response format",
+        "location": "src/api/utils/responses.py",
+        "usage": "Use success_response() and error_response() helpers"
+      },
+      {
+        "pattern": "Database session management",
+        "location": "src/database/session.py",
+        "usage": "Use get_db() context manager for all DB operations"
+      }
+    ],
+    "dependencies_needed": [
+      {
+        "package": "pyjwt",
+        "version": ">=2.8.0",
+        "reason": "JWT token generation and validation"
+      },
+      {
+        "package": "passlib",
+        "version": ">=1.7.4",
+        "reason": "Secure password hashing"
+      }
+    ]
+  },
+  "metadata": {
+    "planning_session_duration_minutes": 15,
+    "estimated_implementation_time_minutes": 60,
+    "risk_level": "low",
+    "requires_review": true,
+    "related_handoffs": []
+  }
+}

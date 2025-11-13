@@ -1,0 +1,10 @@
+{
+  "comment_type": "review",
+  "id": 3488501234,
+  "user": "coderabbitai[bot]",
+  "path": "docs/agents/grafana-agent/ref-docs/grafana-troubleshooting.md",
+  "line": 42,
+  "body": "_\u26a0\ufe0f Potential issue_ | _\ud83d\udfe1 Minor_\n\n**Description:**\nThe dashboard restoration procedure lacks error handling for missing prerequisites.\n\n<details>\n<summary>\ud83d\udcdd Committable suggestion</summary>\n\n```suggestion\n## Dashboard Restoration Procedure\n\nBefore restoring dashboards, ensure prerequisites:\n1. Verify backup file exists and is readable\n2. Check Grafana API credentials are valid\n3. Confirm target organization exists\n\n```bash\n#!/bin/bash\nif [ ! -f \"$BACKUP_FILE\" ]; then\n    echo \"Error: Backup file not found\"\n    exit 1\nfi\n\nif ! curl -s -H \"Authorization: Bearer $GRAFANA_TOKEN\" \"$GRAFANA_URL/api/health\" | grep -q \"ok\"; then\n    echo \"Error: Cannot connect to Grafana API\"\n    exit 1\nfi\n```\n```\n\n</details>\n\n<details>\n<summary>\ud83e\udd16 Prompt for AI Agents</summary>\n\nWhen implementing dashboard restoration:\n- Add prerequisite validation before operations\n- Provide clear error messages for common failures\n- Include rollback procedures for partial failures\n\n</details>\n",
+  "created_at": "2025-11-04T10:05:00Z",
+  "updated_at": "2025-11-04T10:05:00Z"
+}

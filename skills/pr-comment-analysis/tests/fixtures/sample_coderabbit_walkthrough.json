@@ -1,0 +1,8 @@
+{
+  "comment_type": "issue",
+  "id": 3488358395,
+  "user": "coderabbitai[bot]",
+  "body": "<!-- This is an auto-generated comment: summarize by coderabbit.ai -->\n<!-- walkthrough_start -->\n\n## Walkthrough\n\nThis PR restructures documentation from a centralized prompts directory to agent-scoped locations, migrates work issue identifiers from 10N to LAW prefix, adds comprehensive Grafana agent documentation, removes the PRD creator skill suite, and updates numerous cross-references across agent guidelines and reference protocols.\n\n## Changes\n\n| Cohort / File(s) | Change Summary |\n|---|---|\n| **Grafana Agent Documentation** | New documentation added defining Grafana Agent role, capabilities, technology stack, and provisioning patterns; includes API reference, best practices for infrastructure-as-code provisioning, and troubleshooting diagnostic procedures. |\n| **Agent Prompt Files (Restructured)** | Major content reorganization and updates to agent prompts: added/reorganized protocol sections, formatting guidelines, and decision rules; planning agent restructured with startup protocol and Master Dashboard guidance; QA agent expanded with test quality checks and audit protocols; all agents updated with new path references and LAW-XXX identifiers. |\n| **Shared Reference Documentation** | Comprehensive updates across all shared reference docs: replaced 10N-XXX with LAW-XXX identifiers throughout, updated cross-document path references from docs/prompts/ to docs/agents/, reorganized sections. |\n",
+  "created_at": "2025-11-04T10:00:00Z",
+  "updated_at": "2025-11-04T10:00:00Z"
+}
