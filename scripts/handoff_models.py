@@ -26,6 +26,24 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from pathlib import Path
 import os
+import re
+
+
+# Module-level constant for available agents (single source of truth)
+_AVAILABLE_AGENTS = {
+    'action': 'General implementation (deprecated, prefer specialized agents)',
+    'frontend': 'React/Vue/Next.js UI implementation',
+    'backend': 'API development, database operations',
+    'devops': 'Infrastructure, deployment, CI/CD',
+    'debug': 'Root cause analysis, troubleshooting',
+    'seo': 'Technical SEO, meta tags, structured data',
+    'qa': 'Testing and validation (deprecated, use test-writer/test-auditor)',
+    'test-writer': 'Write tests before implementation (TDD)',
+    'test-auditor': 'Audit test quality, catch happy-path bias',
+    'research': 'Information gathering, Linear issue creation',
+    'tracking': 'Linear updates, git operations, PR creation',
+    'browser': 'GUI operations, browser automation'
+}
 
 
 class AgentHandoff(BaseModel):
@@ -131,24 +149,9 @@ class AgentHandoff(BaseModel):
         Raises:
             ValueError: If agent name not in valid agents list
         """
-        valid_agents = {
-            'action': 'General implementation (deprecated, prefer specialized agents)',
-            'frontend': 'React/Vue/Next.js UI implementation',
-            'backend': 'API development, database operations',
-            'devops': 'Infrastructure, deployment, CI/CD',
-            'debug': 'Root cause analysis, troubleshooting',
-            'seo': 'Technical SEO, meta tags, structured data',
-            'qa': 'Testing and validation (deprecated, use test-writer/test-auditor)',
-            'test-writer': 'Write tests before implementation (TDD)',
-            'test-auditor': 'Audit test quality, catch happy-path bias',
-            'research': 'Information gathering, Linear issue creation',
-            'tracking': 'Linear updates, git operations, PR creation',
-            'browser': 'GUI operations, browser automation'
-        }
-
         v_lower = v.lower().strip()
-        if v_lower not in valid_agents:
-            available = '\n'.join(f"  - {name}: {desc}" for name, desc in valid_agents.items())
+        if v_lower not in _AVAILABLE_AGENTS:
+            available = '\n'.join(f"  - {name}: {desc}" for name, desc in _AVAILABLE_AGENTS.items())
             raise ValueError(
                 f"Invalid agent name '{v}'. Available agents:\n{available}\n\n"
                 "Choose agent based on task type:\n"
@@ -204,16 +207,20 @@ class AgentHandoff(BaseModel):
         ]
 
         v_lower = v.lower()
+        found_vague = []
         for pattern, suggestion in vague_patterns:
             if pattern in v_lower:
-                raise ValueError(
-                    f"Task description too vague: contains '{pattern}'.\n"
-                    f"Suggestion: {suggestion}\n\n"
-                    "Be specific:\n"
-                    "  ❌ 'Fix the auth stuff'\n"
-                    "  ✅ 'Fix JWT token validation in src/middleware/auth.ts "
-                    "to return 401 when token signature is invalid'"
-                )
+                found_vague.append((pattern, suggestion))
+
+        if found_vague:
+            vague_list = '\n'.join(f"  - '{pattern}': {suggestion}" for pattern, suggestion in found_vague)
+            raise ValueError(
+                f"Task description contains vague patterns:\n{vague_list}\n\n"
+                "Be specific:\n"
+                "  ❌ 'Fix the auth stuff'\n"
+                "  ✅ 'Fix JWT token validation in src/middleware/auth.ts "
+                "to return 401 when token signature is invalid'"
+            )
 
         return v
 
@@ -239,7 +246,7 @@ class AgentHandoff(BaseModel):
         """
         for path in v:
             # Reject absolute paths with hardcoded user directories
-            forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/']
+            forbidden_prefixes = ['/home/', '/Users/', 'C:\\Users\\', 'C:/Users/', '/srv/']
             for prefix in forbidden_prefixes:
                 if path.startswith(prefix):
                     raise ValueError(
@@ -333,10 +340,10 @@ class AgentHandoff(BaseModel):
         Validate cross-field consistency.
 
         Checks:
-        - File-modifying agents have file_paths specified
-        - Implementation tasks have acceptance_criteria
-        - test-writer agent has acceptance_criteria (defines test cases)
-        - research/tracking agents don't have file_paths
+        - Research/tracking agents don't have file_paths (SPECIFIC RULES FIRST)
+        - Test-writer agent has acceptance_criteria (SPECIFIC RULES FIRST)
+        - File-modifying agents have file_paths specified (GENERAL RULES SECOND)
+        - Implementation tasks have acceptance_criteria (GENERAL RULES SECOND)
 
         Returns:
             Self: Validated model instance
@@ -345,48 +352,8 @@ class AgentHandoff(BaseModel):
             ValueError: If cross-field validation fails
         """
 
-        # File-modifying agents should have file paths
-        file_agents = ['action', 'frontend', 'backend', 'devops', 'debug', 'seo']
-        if self.agent_name in file_agents:
-            if not self.file_paths:
-                raise ValueError(
-                    f"Agent '{self.agent_name}' requires file_paths.\n\n"
-                    f"Specify which files this agent should work with:\n"
-                    "  Example for frontend: ['src/components/Auth.tsx', 'src/hooks/useAuth.ts']\n"
-                    "  Example for backend: ['src/api/auth.py', 'src/models/user.py']\n"
-                    "  Example for tests: ['tests/test_auth.py']\n\n"
-                    "If agent doesn't know which files yet, use pattern: ['src/**/*.py']"
-                )
-
-        # Implementation tasks should have acceptance criteria
-        impl_keywords = ['implement', 'create', 'build', 'develop', 'add', 'write']
-        has_impl = any(kw in self.task_description.lower() for kw in impl_keywords)
-
-        if has_impl and not self.acceptance_criteria:
-            raise ValueError(
-                "Implementation tasks require acceptance_criteria.\n\n"
-                "Define how to verify task completion:\n"
-                "  ❌ Task description only\n"
-                "  ✅ Task description + acceptance criteria\n\n"
-                "Example acceptance criteria:\n"
-                "  [ ] Middleware validates JWT signature\n"
-                "  [ ] Returns 401 on invalid token\n"
-                "  [ ] Returns 403 on expired token\n"
-                "  [ ] Unit tests cover all auth flows\n"
-                "  [ ] Integration tests verify end-to-end auth"
-            )
-
-        # Test-writer agent should have acceptance criteria (defines test cases)
-        if self.agent_name == 'test-writer' and not self.acceptance_criteria:
-            raise ValueError(
-                "test-writer agent requires acceptance_criteria.\n\n"
-                "Acceptance criteria define what tests should verify:\n"
-                "  [ ] Valid tokens pass authentication\n"
-                "  [ ] Invalid tokens return 401\n"
-                "  [ ] Expired tokens return 403\n"
-                "  [ ] Missing tokens return 401\n\n"
-                "Test-writer uses these to write test cases."
-            )
+        # SPECIFIC RULES FIRST (agent-specific constraints)
+        # These must be checked before general rules to avoid masking errors
 
         # Research agent should NOT have file paths (doesn't modify files)
         if self.agent_name == 'research' and self.file_paths:
@@ -412,6 +379,54 @@ class AgentHandoff(BaseModel):
                 "Remove file_paths or choose different agent:\n"
                 "  - To modify files → 'action', 'frontend', 'backend', etc.\n"
                 "  - To handle git/Linear → 'tracking' (no file_paths)"
+            )
+
+        # Test-writer agent should have acceptance criteria (defines test cases)
+        if self.agent_name == 'test-writer' and not self.acceptance_criteria:
+            raise ValueError(
+                "test-writer agent requires acceptance_criteria.\n\n"
+                "Acceptance criteria define what tests should verify:\n"
+                "  [ ] Valid tokens pass authentication\n"
+                "  [ ] Invalid tokens return 401\n"
+                "  [ ] Expired tokens return 403\n"
+                "  [ ] Missing tokens return 401\n\n"
+                "Test-writer uses these to write test cases."
+            )
+
+        # GENERAL RULES SECOND (role-based constraints)
+        # These are checked after specific rules to ensure proper error reporting
+
+        # File-modifying agents should have file paths
+        file_agents = ['action', 'frontend', 'backend', 'devops', 'debug', 'seo']
+        if self.agent_name in file_agents:
+            if not self.file_paths:
+                raise ValueError(
+                    f"Agent '{self.agent_name}' requires file_paths.\n\n"
+                    f"Specify which files this agent should work with:\n"
+                    "  Example for frontend: ['src/components/Auth.tsx', 'src/hooks/useAuth.ts']\n"
+                    "  Example for backend: ['src/api/auth.py', 'src/models/user.py']\n"
+                    "  Example for tests: ['tests/test_auth.py']\n\n"
+                    "If agent doesn't know which files yet, use pattern: ['src/**/*.py']"
+                )
+
+        # Implementation tasks should have acceptance criteria
+        # Use word boundary regex to avoid false positives (e.g., "implementation" contains "implement")
+        impl_keywords = ['implement', 'create', 'build', 'develop', 'add', 'write']
+        desc_lower = self.task_description.lower()
+        has_impl = any(re.search(r'\b' + re.escape(kw) + r'\b', desc_lower) for kw in impl_keywords)
+
+        if has_impl and not self.acceptance_criteria:
+            raise ValueError(
+                "Implementation tasks require acceptance_criteria.\n\n"
+                "Define how to verify task completion:\n"
+                "  ❌ Task description only\n"
+                "  ✅ Task description + acceptance criteria\n\n"
+                "Example acceptance criteria:\n"
+                "  [ ] Middleware validates JWT signature\n"
+                "  [ ] Returns 401 on invalid token\n"
+                "  [ ] Returns 403 on expired token\n"
+                "  [ ] Unit tests cover all auth flows\n"
+                "  [ ] Integration tests verify end-to-end auth"
             )
 
         return self
@@ -459,20 +474,7 @@ def get_available_agents() -> dict[str, str]:
         >>> print(agents['frontend'])
         'React/Vue/Next.js UI implementation'
     """
-    return {
-        'action': 'General implementation (deprecated, prefer specialized agents)',
-        'frontend': 'React/Vue/Next.js UI implementation',
-        'backend': 'API development, database operations',
-        'devops': 'Infrastructure, deployment, CI/CD',
-        'debug': 'Root cause analysis, troubleshooting',
-        'seo': 'Technical SEO, meta tags, structured data',
-        'qa': 'Testing and validation (deprecated, use test-writer/test-auditor)',
-        'test-writer': 'Write tests before implementation (TDD)',
-        'test-auditor': 'Audit test quality, catch happy-path bias',
-        'research': 'Information gathering, Linear issue creation',
-        'tracking': 'Linear updates, git operations, PR creation',
-        'browser': 'GUI operations, browser automation'
-    }
+    return _AVAILABLE_AGENTS.copy()
 
 
 # --- EXAMPLE USAGE ---

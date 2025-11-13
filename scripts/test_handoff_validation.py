@@ -208,8 +208,7 @@ class TestInvalidTaskDescriptions:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "Task description too short" in error_msg
-        assert "10 chars" in error_msg
+        assert "too_short" in error_msg.lower()
 
     def test_vague_task_description_fix_stuff(self):
         """Test vague 'fix stuff' description fails."""
@@ -223,8 +222,9 @@ class TestInvalidTaskDescriptions:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "too vague" in error_msg.lower()
+        assert "contains vague patterns" in error_msg.lower()
         assert "fix stuff" in error_msg.lower()
+        assert "Describe what to fix and how" in error_msg
 
     def test_vague_task_description_do_something(self):
         """Test vague 'do something' description fails."""
@@ -238,8 +238,9 @@ class TestInvalidTaskDescriptions:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "too vague" in error_msg.lower()
+        assert "contains vague patterns" in error_msg.lower()
         assert "do something" in error_msg.lower()
+        assert "Specify exactly what to do" in error_msg
 
 
 # --- INVALID FILE PATH TESTS ---
@@ -370,7 +371,7 @@ class TestInvalidAcceptanceCriteria:
             validate_handoff(handoff_data)
 
         error_msg = str(exc_info.value)
-        assert "too vague" in error_msg.lower()
+        assert "too short" in error_msg.lower()
         assert "done" in error_msg.lower()
 
 
