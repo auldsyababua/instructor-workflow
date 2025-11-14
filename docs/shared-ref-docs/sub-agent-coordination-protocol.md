@@ -13,12 +13,12 @@ You can autonomously spawn specialized sub-agents to execute work without requir
 
 ## When to Spawn Sub-Agents
 
-**Action Agent** - General implementation and code execution:
-- Work block marked "Not Started" with implementation tasks (when no specialist is better fit)
-- Keywords: "implement", "code", "build", "write code", "test", "develop"
-- Prototype promotion from scratch to production
-- General bug fixes requiring code changes
-- Integration work, API implementations (when not frontend/backend specific)
+**Action Agent (DEPRECATED)** - Use Frontend/Backend/DevOps instead:
+- This agent is deprecated. Use specialized agents for specific implementation work:
+  - Frontend Agent (Frank) for UI/client-side work
+  - Backend Agent (Billy) for server/API work
+  - DevOps Agent (Clay) for infrastructure/deployment work
+- Legacy references to Action Agent should be migrated to appropriate specialist
 
 **Frontend Agent (Frank)** - UI-focused implementation:
 - React/Next.js/Vue component development
@@ -34,6 +34,13 @@ You can autonomously spawn specialized sub-agents to execute work without requir
 - Third-party service integrations
 - Backend performance optimization
 
+**DevOps Agent (Clay)** - Infrastructure and deployment:
+- CI/CD pipeline configuration
+- Docker/container orchestration
+- Infrastructure as code (Terraform, etc.)
+- Deployment automation
+- Monitoring and logging setup
+
 **Debug Agent (Devin)** - Production issue diagnosis:
 - Production bugs or errors
 - Root cause analysis needed
@@ -48,11 +55,23 @@ You can autonomously spawn specialized sub-agents to execute work without requir
 - SEO performance audits
 - Sitemap and robots.txt optimization
 
-**QA Agent** - Testing and verification:
-- After Action Agent completes work
-- Before marking work blocks "Complete"
-- Keywords: "verify", "validate", "review", "quality check", "test coverage"
-- When verification is needed before closing an issue
+**QA Agent (DEPRECATED)** - Use Test-Writer/Test-Auditor instead:
+- This agent is deprecated. Use specialized test agents for test workflows:
+  - Test-Writer Agent: Write tests BEFORE implementation (TDD Phase 3), validate after (TDD Phase 5)
+  - Test-Auditor Agent: Audit test quality (TDD Phase 3.5) for happy-path bias and vacuous assertions
+- Legacy QA Agent references should be migrated to TDD workflow with specialized test agents
+
+**Test-Writer Agent** - TDD test creation and validation:
+- Write tests BEFORE implementation (TDD Phase 3)
+- Validate tests pass after implementation (TDD Phase 5)
+- Own ALL test file modifications
+- Forbidden: Implementation code (that's Frontend/Backend/DevOps)
+
+**Test-Auditor Agent** - Test quality audit:
+- Audit test quality (TDD Phase 3.5)
+- Catch happy-path bias, vacuous assertions
+- Ensure tests validate behavior, not just pass
+- Review test coverage gaps
 
 **Tracking Agent** - Git/GitHub/Linear bookkeeping:
 - Repository setup, branch management
@@ -81,6 +100,26 @@ User wants new dashboard component with accessibility features.
 
 ❌ Wrong: Use Write tool to create component
 ✅ Right: Spawn Frank (Frontend Agent) with specs
+```
+
+**Infrastructure Setup**:
+```
+User needs CI/CD pipeline and Docker deployment.
+
+❌ Wrong: Try to configure Docker/GitHub Actions yourself
+✅ Right: Spawn Clay (DevOps Agent) for infrastructure work
+```
+
+**TDD Workflow**:
+```
+User wants new authentication feature with test-driven development.
+
+❌ Wrong: Write implementation first
+✅ Right:
+1. Spawn Test-Writer Agent to write tests (TDD Phase 3)
+2. Spawn Test-Auditor Agent to audit test quality (TDD Phase 3.5)
+3. Spawn Backend Agent to implement (TDD Phase 4)
+4. Spawn Test-Writer Agent to validate tests pass (TDD Phase 5)
 ```
 
 **Backend API Issue**:
@@ -134,32 +173,39 @@ DO NOT read other work blocks. DO NOT make assumptions about project scope beyon
 ```
 
 **Description Format Examples:**
-- `"Action Agent: Implement authentication middleware"`
-- `"QA Agent: Write tests for user registration flow"`
-- `"Research Agent: Investigate current Supabase auth best practices"`
-- `"Tracking Agent: Create PR for authentication feature"`
 - `"Frontend Agent: Build responsive dashboard layout"`
 - `"Backend Agent: Create REST API endpoints for billing"`
+- `"DevOps Agent: Configure GitHub Actions CI/CD pipeline"`
 - `"Debug Agent: Diagnose 500 errors in payment processing"`
 - `"SEO Agent: Optimize meta tags and structured data"`
+- `"Test-Writer Agent: Write unit tests for authentication flow (TDD Phase 3)"`
+- `"Test-Auditor Agent: Audit test coverage for edge cases"`
+- `"Research Agent: Investigate current Supabase auth best practices"`
+- `"Tracking Agent: Create PR for authentication feature"`
 
 **Agent Type Values:**
-- Action Agent → "Action Agent"
+- Action Agent → "Action Agent" (DEPRECATED - use Frontend/Backend/DevOps)
 - Frontend Agent → "Frontend Agent (Frank)"
 - Backend Agent → "Backend Agent (Billy)"
+- DevOps Agent → "DevOps Agent (Clay)"
 - Debug Agent → "Debug Agent (Devin)"
 - SEO Agent → "SEO Agent (Sam)"
-- QA Agent → "QA Agent"
+- QA Agent → "QA Agent" (DEPRECATED - use Test-Writer/Test-Auditor)
+- Test-Writer Agent → "Test-Writer Agent"
+- Test-Auditor Agent → "Test-Auditor Agent"
 - Tracking Agent → "Tracking Agent"
 - Research Agent → "Research Agent"
 
 **[agent] Values (for prompt path):**
-- Action Agent → "action"
+- Action Agent → "action" (DEPRECATED)
 - Frontend Agent → "frontend"
 - Backend Agent → "backend"
+- DevOps Agent → "devops"
 - Debug Agent → "debug"
 - SEO Agent → "seo"
-- QA Agent → "qa"
+- QA Agent → "qa" (DEPRECATED)
+- Test-Writer Agent → "test-writer"
+- Test-Auditor Agent → "test-auditor"
 - Tracking Agent → "tracking"
 - Research Agent → "researcher"
 
@@ -254,5 +300,5 @@ Send a single message with multiple Task tool calls.
 
 ---
 
-**Last Updated**: 2025-11-04
+**Last Updated**: 2025-01-13
 **Extracted From**: planning-agent.md (lines 394-639)
