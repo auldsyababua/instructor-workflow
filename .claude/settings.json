@@ -15,7 +15,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type PreToolUse --summarize"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type PreToolUse --summarize"
           }
         ]
       }
@@ -30,7 +30,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type PostToolUse --summarize"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type PostToolUse --summarize"
           }
         ]
       }
@@ -44,7 +44,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type Notification --summarize"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type Notification --summarize"
           }
         ]
       }
@@ -58,7 +58,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type Stop --add-chat"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type Stop --add-chat"
           }
         ]
       }
@@ -72,7 +72,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type SubagentStop"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type SubagentStop"
           }
         ]
       }
@@ -86,7 +86,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type PreCompact"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type PreCompact"
           }
         ]
       }
@@ -100,7 +100,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type UserPromptSubmit --summarize"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type UserPromptSubmit --summarize"
           }
         ]
       }
@@ -114,7 +114,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type SessionStart"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type SessionStart"
           }
         ]
       }
@@ -128,7 +128,7 @@
           },
           {
             "type": "command",
-            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --source-app instructor-workflow --event-type SessionEnd"
+            "command": "uv run $CLAUDE_PROJECT_DIR/.claude/hooks/send_event.py --server-url http://localhost:60391/events --source-app instructor-workflow --event-type SessionEnd"
           }
         ]
       }
