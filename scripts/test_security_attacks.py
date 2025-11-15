@@ -21,7 +21,8 @@ import pytest
 import os
 import time
 from unittest.mock import Mock
-from scripts.validated_spawner import ValidatedAgentSpawner, ValidationError
+from pydantic import ValidationError
+from scripts.validated_spawner import ValidatedAgentSpawner
 from scripts.rate_limiter import RateLimitError, RateLimiter
 from scripts.audit_logger import AuditLogger, redact_pii
 from scripts.squad_manager import SquadManager
@@ -35,8 +36,6 @@ def real_spawner():
     mock_squad = Mock(spec=SquadManager)
     mock_squad.spawn_agent.return_value = "mock-session-123"
     mock_squad.wait_for_agents.return_value = True
-
-    os.environ['IW_SPAWNING_AGENT'] = 'planning'
 
     return ValidatedAgentSpawner(
         squad_manager=mock_squad,

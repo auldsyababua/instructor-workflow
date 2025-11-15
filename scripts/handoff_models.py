@@ -589,12 +589,13 @@ class AgentHandoff(BaseModel):
 
 # --- VALIDATION FUNCTIONS ---
 
-def validate_handoff(data: dict) -> AgentHandoff:
+def validate_handoff(data: dict, spawning_agent: str = 'unknown') -> AgentHandoff:
     """
     Validate handoff data and return AgentHandoff model.
 
     Args:
         data: Dictionary with handoff fields
+        spawning_agent: Agent making the delegation (for capability validation)
 
     Returns:
         AgentHandoff: Validated handoff model
@@ -612,9 +613,17 @@ def validate_handoff(data: dict) -> AgentHandoff:
         ...         "[ ] Form submits to /api/auth/login",
         ...         "[ ] Error messages display on failure"
         ...     ]
-        ... })
+        ... }, spawning_agent='planning')
     """
-    return AgentHandoff(**data)
+    # Set spawning agent in environment for validator to access
+    # This is thread-safe because we set it immediately before validation
+    # and the validation is synchronous (no await points where thread could switch)
+    os.environ['IW_SPAWNING_AGENT'] = spawning_agent
+    try:
+        return AgentHandoff(**data)
+    finally:
+        # Clean up to prevent leakage to other validations
+        os.environ.pop('IW_SPAWNING_AGENT', None)
 
 
 def get_available_agents() -> dict[str, str]:

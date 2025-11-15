@@ -46,22 +46,6 @@ from scripts.audit_logger import AuditLogger
 import requests  # For WebSocket observability integration
 
 
-class ValidationError(Exception):
-    """
-    Raised when handoff validation fails.
-
-    Attributes:
-        agent_type: Target agent that failed validation
-        error: Validation error message
-        retries: Number of retries attempted
-    """
-    def __init__(self, agent_type: str, error: str, retries: int = 0):
-        self.agent_type = agent_type
-        self.error = error
-        self.retries = retries
-        super().__init__(error)
-
-
 class ValidatedAgentSpawner:
     """
     Validation wrapper around SquadManager with security hardening.
@@ -138,7 +122,7 @@ class ValidatedAgentSpawner:
             session_id: Spawned agent session identifier
 
         Raises:
-            ValidationError: If handoff invalid (prompt injection, vague task, etc.)
+            ValueError: If handoff invalid (prompt injection, vague task, etc.)
             RateLimitError: If spawn rate limit exceeded
             RuntimeError: If spawn fails (squad session not found, etc.)
 
@@ -152,10 +136,6 @@ class ValidatedAgentSpawner:
             ... )
         """
         start_time = time.time()
-
-        # Set spawning agent for capability validation
-        # This env var is read by handoff_models.py validate_capability_constraints()
-        os.environ['IW_SPAWNING_AGENT'] = spawning_agent
 
         try:
             # Layer 1: Input sanitization
@@ -171,13 +151,16 @@ class ValidatedAgentSpawner:
             # - Prompt injection detection (OWASP LLM01)
             # - Capability constraints (spawning agent permissions)
             # - File path security (absolute paths, traversal)
-            handoff = validate_handoff({
-                "agent_name": agent_type,
-                "task_description": sanitized_prompt,
-                # NOTE: file_paths, acceptance_criteria extracted by Planning Agent
-                # For MVP fail-fast validation, we only validate task_description
-                # and agent_name. Full handoff validation would require LLM extraction.
-            })
+            handoff = validate_handoff(
+                data={
+                    "agent_name": agent_type,
+                    "task_description": sanitized_prompt,
+                    # NOTE: file_paths, acceptance_criteria extracted by Planning Agent
+                    # For MVP fail-fast validation, we only validate task_description
+                    # and agent_name. Full handoff validation would require LLM extraction.
+                },
+                spawning_agent=spawning_agent  # Thread-safe parameter passing
+            )
 
             # Calculate validation latency
             latency_ms = int((time.time() - start_time) * 1000)
@@ -291,12 +274,9 @@ class ValidatedAgentSpawner:
                     'severity': 'critical'
                 })
 
-            # Wrap in ValidationError with context
-            raise ValidationError(
-                agent_type=agent_type,
-                error=error_msg,
-                retries=0
-            ) from e
+            # Re-raise original Pydantic ValidationError (no wrapper)
+            # Tests and calling code expect native ValueError from Pydantic validators
+            raise
 
         except Exception as e:
             # Unexpected error (spawn failed, etc.)
@@ -542,8 +522,8 @@ if __name__ == "__main__":
         print(f"✅ Agent spawned: {session_id}")
     except RuntimeError as e:
         print(f"⚠️  Spawn failed (expected - no squad session): {str(e)[:100]}...")
-    except ValidationError as e:
-        print(f"❌ Validation failed: {e.error[:100]}...")
+    except ValueError as e:
+        print(f"❌ Validation failed: {str(e)[:100]}...")
     print()
 
     # Example 2: Prompt injection blocked
@@ -558,9 +538,9 @@ if __name__ == "__main__":
             spawning_agent='planning'
         )
         print("✅ Spawn succeeded (unexpected!)")
-    except ValidationError as e:
+    except ValueError as e:
         print(f"❌ Expected validation failure:")
-        print(f"   {e.error[:200]}...")
+        print(f"   {str(e)[:200]}...")
     print()
 
     # Example 3: Capability violation
@@ -575,9 +555,9 @@ if __name__ == "__main__":
             spawning_agent='qa'  # QA can't spawn Backend
         )
         print("✅ Spawn succeeded (unexpected!)")
-    except ValidationError as e:
+    except ValueError as e:
         print(f"❌ Expected capability violation:")
-        print(f"   {e.error[:200]}...")
+        print(f"   {str(e)[:200]}...")
     print()
 
     # Example 4: Get validation statistics

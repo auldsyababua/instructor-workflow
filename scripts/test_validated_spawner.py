@@ -22,7 +22,8 @@ import pytest
 import os
 import time
 from unittest.mock import Mock, MagicMock, patch
-from scripts.validated_spawner import ValidatedAgentSpawner, ValidationError
+from pydantic import ValidationError
+from scripts.validated_spawner import ValidatedAgentSpawner
 from scripts.rate_limiter import RateLimitError
 from scripts.squad_manager import SquadManager
 from scripts.rate_limiter import RateLimiter
@@ -77,7 +78,6 @@ def mock_audit_logger():
 @pytest.fixture
 def spawner(mock_squad_manager, mock_rate_limiter, mock_audit_logger):
     """Create ValidatedAgentSpawner with mocked dependencies."""
-    os.environ['IW_SPAWNING_AGENT'] = 'planning'  # Set default spawning agent
     return ValidatedAgentSpawner(
         squad_manager=mock_squad_manager,
         rate_limiter=mock_rate_limiter,

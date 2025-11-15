@@ -36,7 +36,6 @@ def mock_squad_manager():
 @pytest.fixture
 def spawner(mock_squad_manager):
     """Create spawner with mocked SquadManager."""
-    os.environ['IW_SPAWNING_AGENT'] = 'planning'
     return ValidatedAgentSpawner(squad_manager=mock_squad_manager)
 
 
@@ -644,9 +643,6 @@ class TestCapabilityConstraints:
 
     def test_qa_cannot_spawn_backend(self):
         """Test QA agent cannot spawn Backend agent (capability violation)."""
-        # Set spawning agent to QA
-        os.environ['IW_SPAWNING_AGENT'] = 'qa'
-
         handoff_data = {
             "agent_name": "backend",
             "task_description": "Implement auth API in src/auth.py with comprehensive unit tests",
@@ -658,7 +654,7 @@ class TestCapabilityConstraints:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='qa')
 
         error_msg = str(exc_info.value)
         assert "capability violation" in error_msg.lower()
@@ -667,8 +663,6 @@ class TestCapabilityConstraints:
 
     def test_planning_can_spawn_any_agent(self):
         """Test Planning Agent has universal spawn capability."""
-        os.environ['IW_SPAWNING_AGENT'] = 'planning'
-
         # Test spawning all agent types
         agent_types = ['backend', 'frontend', 'devops', 'qa', 'test-writer', 'research']
 
@@ -685,13 +679,11 @@ class TestCapabilityConstraints:
             elif agent_type == 'test-writer':
                 handoff_data["acceptance_criteria"] = ["[ ] Tests written"]
 
-            handoff = validate_handoff(handoff_data)
+            handoff = validate_handoff(handoff_data, spawning_agent='planning')
             assert handoff.agent_name == agent_type
 
     def test_test_writer_cannot_spawn(self):
         """Test test-writer agent has no spawning capability."""
-        os.environ['IW_SPAWNING_AGENT'] = 'test-writer'
-
         handoff_data = {
             "agent_name": "backend",
             "task_description": "Implement feature in src/feature.py with unit tests",
@@ -700,7 +692,7 @@ class TestCapabilityConstraints:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='test-writer')
 
         error_msg = str(exc_info.value)
         assert "capability violation" in error_msg.lower()
@@ -709,8 +701,6 @@ class TestCapabilityConstraints:
 
     def test_backend_can_spawn_devops(self):
         """Test backend agent can spawn devops (allowed in capability matrix)."""
-        os.environ['IW_SPAWNING_AGENT'] = 'backend'
-
         handoff_data = {
             "agent_name": "devops",
             "task_description": "Deploy backend service to production with health checks",
@@ -721,13 +711,11 @@ class TestCapabilityConstraints:
             ]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='backend')
         assert handoff.agent_name == "devops"
 
     def test_frontend_cannot_spawn_backend(self):
         """Test frontend agent cannot spawn backend (capability violation)."""
-        os.environ['IW_SPAWNING_AGENT'] = 'frontend'
-
         handoff_data = {
             "agent_name": "backend",
             "task_description": "Implement API endpoint in src/api/users.py",
@@ -736,7 +724,7 @@ class TestCapabilityConstraints:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='frontend')
 
         error_msg = str(exc_info.value)
         assert "capability violation" in error_msg.lower()
