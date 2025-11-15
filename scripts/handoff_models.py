@@ -222,6 +222,60 @@ class AgentHandoff(BaseModel):
                 "to return 401 when token signature is invalid'"
             )
 
+        # Check for prompt injection patterns (OWASP LLM01)
+        # NOTE: This is a defense-in-depth layer. Primary injection defense should
+        # be at the Planning Agent input sanitization layer (before reaching Pydantic).
+        dangerous_patterns = [
+            # Direct injection patterns
+            (r'\b(?:ignore|disregard|forget)\s+(?:previous|all|above)\s+(?:instructions|commands|context)',
+             'Direct command injection (ignore previous instructions)'),
+            (r'\b(?:system|developer|admin|root)\s+(?:mode|override|prompt)',
+             'System mode override attempt'),
+            (r'\breveal\s+(?:system|prompt|instructions)',
+             'System prompt reveal attempt'),
+
+            # Role manipulation
+            (r'you\s+are\s+now\s+(?:a|an|in)',
+             'Role manipulation (you are now...)'),
+            (r'act\s+as\s+(?:a|an)',
+             'Role manipulation (act as...)'),
+            (r'pretend\s+(?:to\s+be|you\s+are)',
+             'Role manipulation (pretend to be...)'),
+
+            # Command injection in task context
+            (r'(?:rm|del|sudo|bash|sh|exec|eval)\s+-[rf]',
+             'Shell command injection'),
+            (r'spawn\s+.*?\s+with\s+prompt\s*=',
+             'Agent spawn command injection'),
+
+            # Encoding attacks
+            (r'(?:base64|hex|unicode|url)(?:_)?(?:encode|decode)',
+             'Encoding-based obfuscation'),
+        ]
+
+        v_lower = v.lower()
+        for pattern, attack_type in dangerous_patterns:
+            match = re.search(pattern, v_lower, re.IGNORECASE)
+            if match:
+                matched_text = match.group()
+                raise ValueError(
+                    f"Potential prompt injection detected (OWASP LLM01).\n\n"
+                    f"Attack type: {attack_type}\n"
+                    f"Matched pattern: '{matched_text}'\n\n"
+                    "Security: Task description blocked to prevent context injection.\n\n"
+                    "If this is legitimate:\n"
+                    "  1. Rephrase task without triggering injection patterns\n"
+                    "  2. For discussions ABOUT commands, use indirect language\n"
+                    "     Example: 'Discuss file deletion patterns' instead of 'rm -rf'\n"
+                    "  3. Contact security team for allowlist exception if necessary"
+                )
+
+        # TODO(future): Add fuzzy matching for typoglycemia (ignor3 pr3vious instructi0ns)
+        # This requires Levenshtein distance or character substitution detection.
+        # For MVP, explicit patterns above catch most attacks. Fuzzy matching would
+        # add ~50ms latency per validation and increase false positive rate.
+        # Implement if attack vectors evolve to use obfuscation consistently.
+
         return v
 
     @field_validator('file_paths')
@@ -333,6 +387,107 @@ class AgentHandoff(BaseModel):
         return v
 
     # --- MODEL VALIDATORS ---
+
+    @model_validator(mode='after')
+    def validate_capability_constraints(self):
+        """
+        Enforce agent capability boundaries (privilege escalation prevention).
+
+        CRITICAL: This validator runs FIRST (before field validation) to ensure
+        capability violations are not masked by other validation errors.
+
+        Validates that spawning agent has permission to spawn target agent.
+        Prevents attacks where compromised/malicious agent attempts to
+        spawn higher-privileged agents.
+
+        Capability matrix (spawner → allowed targets):
+        - planning: ['*'] (universal capability - can spawn any agent)
+        - qa: ['test-writer', 'test-auditor'] (only test-related agents)
+        - test-writer: [] (no spawning capability)
+        - test-auditor: [] (no spawning capability)
+        - frontend: ['frontend', 'test-writer'] (can spawn self + tests)
+        - backend: ['backend', 'test-writer', 'devops'] (can spawn self + tests + infra)
+        - devops: ['devops', 'test-writer'] (can spawn self + tests)
+        - research: [] (no spawning capability - information gathering only)
+        - tracking: [] (no spawning capability - git/linear operations only)
+        - browser: [] (no spawning capability - GUI automation only)
+
+        Environment: Set IW_SPAWNING_AGENT to indicate which agent is delegating.
+
+        Returns:
+            Self: Validated model instance
+
+        Raises:
+            ValueError: If spawning agent lacks capability to spawn target agent
+        """
+        spawning_agent = os.getenv('IW_SPAWNING_AGENT', 'unknown')
+        target_agent = self.agent_name
+
+        # Capability matrix (spawner → allowed targets)
+        # NOTE: This matrix is security-critical. Changes require security review.
+        capability_matrix = {
+            # Planning Agent: Universal capability (trusted coordinator)
+            'planning': ['*'],
+
+            # QA Agent: Can spawn test-related agents only
+            'qa': ['test-writer', 'test-auditor'],
+
+            # Implementation agents: Can spawn self + tests + related infra
+            'frontend': ['frontend', 'test-writer'],
+            'backend': ['backend', 'test-writer', 'devops'],
+            'devops': ['devops', 'test-writer'],
+            'debug': ['debug', 'test-writer'],
+            'seo': ['seo', 'test-writer'],
+
+            # Test agents: No spawning capability (leaf nodes)
+            'test-writer': [],
+            'test-auditor': [],
+
+            # Research/tracking/browser: No spawning capability (specialized ops)
+            'research': [],
+            'tracking': [],
+            'browser': [],
+
+            # Deprecated agents (maintain for backward compatibility)
+            'action': ['action', 'test-writer'],
+        }
+
+        # Get allowed targets for spawning agent
+        allowed_targets = capability_matrix.get(spawning_agent, [])
+
+        # Check if target is allowed
+        # '*' = universal capability (planning agent)
+        if '*' not in allowed_targets and target_agent not in allowed_targets:
+            # Format allowed list for error message
+            if not allowed_targets:
+                allowed_str = "none (no spawning capability)"
+            else:
+                allowed_str = ', '.join(f"'{a}'" for a in allowed_targets)
+
+            raise ValueError(
+                f"Capability violation: '{spawning_agent}' cannot spawn '{target_agent}'.\n\n"
+                f"Allowed targets for '{spawning_agent}': {allowed_str}\n\n"
+                "Security: Prevents privilege escalation via agent spawning.\n\n"
+                "This error indicates:\n"
+                "  1. Wrong agent is attempting delegation (should be Planning Agent)\n"
+                "  2. IW_SPAWNING_AGENT environment variable incorrectly set\n"
+                "  3. Attack attempt (malicious agent trying to spawn privileged agent)\n\n"
+                "If this is legitimate:\n"
+                "  - Delegate through Planning Agent instead\n"
+                "  - Update capability_matrix in handoff_models.py if new workflow requires it\n"
+                "  - Contact security team for capability matrix changes"
+            )
+
+        # TODO(future): Add spawn graph depth limits
+        # Prevent spawn chains (A spawns B spawns C spawns D...) from exceeding
+        # depth limit (e.g., max 3 levels deep). This prevents:
+        # - Infinite spawn loops (A → B → C → A)
+        # - Resource exhaustion via deep spawn trees
+        # - Attack vectors using spawn chain obfuscation
+        # Implementation: Track spawn ancestry via IW_SPAWN_DEPTH env var,
+        # reject if depth > IW_MAX_SPAWN_DEPTH (default: 3)
+
+        return self
 
     @model_validator(mode='after')
     def validate_consistency(self):
