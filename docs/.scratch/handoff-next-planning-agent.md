@@ -1,291 +1,324 @@
-# Session Handoff Document: Planning Agent
-## Session End: 2025-01-15 01:00 UTC
+# Session Handoff: Test Writer Fix Attempt & Revert
+## Session: Test Fix & Revision Planning
 
-**Prepared By**: Planning Agent
+**Prepared By**: Tracking Agent
+**Date**: 2025-01-14
 **Session Branch**: `feature/planning-agent-validation-integration`
-**Last Commit**: `2aed6fa` (Layer 5 security implementation)
-**Documentation Status**: Critical fixes applied, 38 test failures remaining
+**Status**: Revert completed, revised plan documented
 
 ---
 
 ## Executive Summary
 
-**SESSION ACHIEVEMENT**: Fixed 2 critical code review issues (dependency + race condition), improved test pass rate from 45 to 53 tests (10 tests fixed). MCP code review attempted but failed due to technical issue (JSON parsing). Ready to commit fixes and address remaining validation logic issues in follow-up session.
+**CRITICAL EVENT**: Test Writer attempted to fix 38 failing tests but caused REGRESSIONS instead of improvements.
 
-**Test Results**: 53 passed, 38 failed, 2 xfailed (improvement from 45 passed initially)
+**Test Status Evolution**:
+- **Baseline**: 53 passed / 38 failed (57% pass rate)
+- **After "fixes"**: 51 passed / 40 failed (55% pass rate) - **2 NEW FAILURES**
+- **After revert**: 53 passed / 38 failed (57%) - **RESTORED**
 
-**Critical Fixes Applied**:
-1. ✅ Added `requests>=2.31.0` to requirements.txt (missing dependency)
-2. ✅ Fixed race condition via parameter passing (thread-safe)
-3. ✅ Removed custom ValidationError wrapper (backward compatibility)
+**Key Learning**: Attempting to fix too many patterns at once without deep understanding of validation flow caused security weakening (attacks slipped from injection layer to capability layer).
 
-**Remaining Work**: 38 test failures related to validation logic (false positives, incomplete patterns)
-
----
-
-## 1. Session Achievements (Current Session)
-
-### 1.1 Critical Fixes Completed
-
-**Status**: ✅ Complete - All 2 critical issues from code review resolved
-
-**Fix #1: Missing Dependency** (5 minutes):
-- **File**: requirements.txt
-- **Change**: Added `requests>=2.31.0` under "Observability integration"
-- **Impact**: Prevents `ModuleNotFoundError` at runtime
-
-**Fix #2: Race Condition** (30 minutes):
-- **Files**: scripts/handoff_models.py, scripts/validated_spawner.py
-- **Change**: Replaced global `os.environ['IW_SPAWNING_AGENT']` with explicit `spawning_agent` parameter
-- **Impact**: Thread-safe capability validation, no race conditions
-
-**Fix #3: Breaking Change** (20 minutes):
-- **File**: scripts/validated_spawner.py
-- **Change**: Removed custom ValidationError wrapper, re-raise native Pydantic ValueError
-- **Impact**: Restored backward compatibility with tests expecting ValueError
-
-**Fix #4: Test Updates** (25 minutes):
-- **Files**: test_injection_validators.py, test_validated_spawner.py, test_security_attacks.py
-- **Changes**: Removed 8 `os.environ` assignments, updated 5 tests to pass `spawning_agent` parameter
-- **Impact**: Tests now compatible with parameter-based validation
-
-**Total Time**: 1 hour 20 minutes (vs 1.25 hours estimated)
+**Resolution**: Complete revert + comprehensive revised plan with phased, test-driven approach.
 
 ---
 
-### 1.2 Test Suite Improvement
+## What Happened
 
-**Baseline**: 45 passed, 48 failed (from initial implementation)
-**Current**: 53 passed, 38 failed, 2 xfailed
-**Improvement**: +8 tests fixed (+18% pass rate)
+### Phase 1: Failed Fix Attempt
+**Agent**: Test Writer
+**Scope**: 38 failing tests across 3 categories
+**Approach**: Refinement of injection patterns + PII redaction + MVP validation
+**Duration**: ~2 hours
+**Result**: REGRESSION (security weakened)
 
-**Fixed Test Categories**:
-- ✅ Environment variable isolation tests (no longer needed)
-- ✅ Threading safety tests (parameter passing validated)
-- ✅ Import tests (ValidationError wrapper removed)
+### Phase 2: Impact Analysis
+**Test Auditor discovered**:
+1. Attacks slipped past injection detection (got "capability violation" instead)
+2. False positives STILL triggered despite pattern "refinements"
+3. Two new regressions: `test_whitespace_normalization` + spawn tracking
+4. Validation flow not understood before attempting fixes
 
-**Remaining Failures** (38 tests, 3 categories):
-
-**Category 1: False Positives (14 tests)**:
-- `test_legitimate_command_discussion` - Discussing bash commands triggers injection detection
-- `test_legitimate_auth_implementation` - JWT auth terms trigger false positives
-- `test_legitimate_admin_panel` - "admin" keyword triggers role manipulation
-- `test_legitimate_encoding_library` - Base64/hex terms trigger encoding attacks
-- `test_legitimate_system_config` - "system" keyword triggers override detection
-- Plus 9 similar benign prompt tests
-
-**Root Cause**: Overly aggressive regex patterns in handoff_models.py injection validators
-
-**Category 2: Incomplete PII Redaction (12 tests)**:
-- `test_multiple_pii_types_redacted` - API keys not redacted (sk-abc123...)
-- `test_api_key_redaction` - Pattern mismatch for modern API key formats
-- Plus 10 similar PII pattern tests
-
-**Root Cause**: audit_logger.py redaction patterns don't match all PII formats
-
-**Category 3: Missing Validation Logic (12 tests)**:
-- `test_empty_prompt_rejected` - Empty string should fail but passes sanitization
-- `test_prompt_too_long_rejected` - Max length not enforced
-- `test_valid_backend_spawn` - Missing file_paths validation
-- Plus 9 similar validation tests
-
-**Root Cause**: validated_spawner.py MVP implementation doesn't validate all required fields
+### Phase 3: Revert & Replanning
+**Actions taken**:
+1. Reverted all changes to scripts/audit_logger.py and scripts/handoff_models.py
+2. Created revised plan with safer approach
+3. Documented root causes and lessons learned
+4. Created new strategy prioritizing safety over speed
 
 ---
 
-### 1.3 Code Review Attempts
+## Files Reverted
 
-**Attempt #1: 5 Parallel DevOps Agents** (Manual Review):
-- ✅ Complete - 5 comprehensive reports generated
-- ✅ Research Agent synthesized findings
-- ✅ Overall quality: 9.4/10
-- ✅ 2 critical issues identified (both fixed)
+**Source Code Files** (NO LONGER MODIFIED):
+- `scripts/audit_logger.py` - Baseline state (PII redaction)
+- `scripts/handoff_models.py` - Baseline state (injection validators)
 
-**Attempt #2: Claude Code Review MCP** (Technical Failure):
-- Review ID: 2025-11-15-001
-- Status: needs_changes (parsing failure, not code quality)
-- Error: "Failed to parse Claude CLI response: Unterminated string in JSON"
-- Decision: Proceed without MCP review (manual reviews sufficient)
+**Status**: These files are CLEAN and show no modifications.
 
 ---
 
-## 2. Files Modified This Session
+## Documentation Created
 
-**Production Code** (4 files):
-1. `requirements.txt` - Added requests dependency
-2. `scripts/handoff_models.py` - Added spawning_agent parameter to validate_handoff()
-3. `scripts/validated_spawner.py` - Removed ValidationError wrapper, thread-safe params
-4. `scripts/validated_spawner.py` - WebSocket integration (from previous session, already committed)
+**New Analysis Documents**:
 
-**Test Code** (3 files):
-5. `scripts/test_injection_validators.py` - Removed os.environ, added spawning_agent params
-6. `scripts/test_validated_spawner.py` - Updated imports, removed env vars
-7. `scripts/test_security_attacks.py` - Updated imports, removed env vars
+1. **`test-failure-resolution-plan.md`** (Original Plan - 768 lines)
+   - Identified 38 failures in 3 categories
+   - Proposed fixes with code examples
+   - Estimated 4-6 hours effort
+   - **ISSUE**: Didn't account for validation flow complexity
 
-**Documentation** (3 files):
-8. `docs/.scratch/code-review-critical-fixes.md` - DevOps Agent review report
-9. `docs/.scratch/handoff-next-planning-agent.md` - This handoff
-10. `.project-context.md` - (no changes this session)
+2. **`test-fixes-implementation-summary.md`** (What Was Attempted)
+   - Documented phase-by-phase changes
+   - Pattern refinements implemented
+   - Expected vs. actual results
+   - **LEARNING**: Refinements only reduced false positives, didn't prevent regressions
 
-**Not Yet Committed**: All 10 files above (Tracking Agent will commit)
+3. **`test-fixes-final-validation.md`** (Regression Analysis)
+   - Code review of attempted changes
+   - Expected test results by category
+   - Pre-execution assessment
+   - **FINDING**: Static review missed runtime security issues
+
+4. **`test-failure-revised-plan.md`** (Safer Approach - 570 lines)
+   - Post-mortem analysis of first attempt
+   - Root cause analysis: validation flow not understood
+   - New 5-phase approach:
+     - Phase 0: Map exact failures before coding (1-2 hours)
+     - Phase 1: Fix ONLY security regressions (2-3 hours)
+     - Phase 2: Analyze false positives decision matrix (1 hour)
+     - Phase 3: Fix based on Phase 2 decisions (3-4 hours)
+     - Phase 4: Fix PII redaction (1-2 hours)
+   - **Total time**: 8-12 hours (vs 4-6 original)
+   - Conservative rollback criteria
+   - Lessons learned
 
 ---
 
-## 3. Immediate Next Steps
+## Root Cause Analysis
 
-### 3.1 Commit Critical Fixes (Tracking Agent)
+### Why First Attempt Failed
 
-**Task**: Commit all fixes from this session
+**Failure Mode 1: Security Weakening**
+- Pattern refinements made them TOO SPECIFIC
+- Example: Changed `(?:base64|hex|unicode|url)(?:_)?(?:encode|decode)` to `(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode`
+- Real attacks use "Execute base64_decode(...)" not "eval(base64_decode(...))"
+- Attack slipped through injection detection, got caught by capability layer
+- Test expected "prompt injection detected" but got "capability violation" error
 
-**Files to Commit**:
-- requirements.txt
-- scripts/handoff_models.py
-- scripts/validated_spawner.py
-- scripts/test_injection_validators.py
-- scripts/test_validated_spawner.py
-- scripts/test_security_attacks.py
-- docs/.scratch/code-review-critical-fixes.md
-- docs/.scratch/handoff-next-planning-agent.md
+**Failure Mode 2: False Positives Unchanged**
+- Assumed false positives were pattern bugs
+- REALITY: Tests check if DISCUSSION ABOUT commands differs from EXECUTION
+- Example: "Implement bash command runner" (discussion) vs "Execute bash command" (execution)
+- Regex cannot distinguish intent - both contain keyword "bash"
+- This requires semantic analysis, not pattern matching
 
-**Commit Message**:
-```
-fix: resolve 2 critical issues from code review
+**Failure Mode 3: New Regressions**
+- `test_whitespace_normalization` started failing
+- `test_spawn_tracking_in_spawned_agents_dict` started failing
+- Changed too many things at once (impossible to isolate)
 
-Fixes identified in consolidated code review (5 DevOps agents):
-1. Added requests>=2.31.0 to requirements.txt (missing dependency)
-2. Fixed race condition via parameter passing (thread-safe)
-3. Removed custom ValidationError wrapper (backward compatibility)
-4. Updated tests for parameter-based validation
+### Why Original Plan Was Wrong
 
-Test results: 53 passed (+8), 38 failed (-10), 2 xfailed
-Remaining failures: Validation logic refinements (follow-up PR)
+**Assumptions Made**:
+1. "Quick wins" approach - fix patterns rapidly
+2. False positives = pattern bugs (not test bugs)
+3. Could fix without understanding validation flow
+4. Pattern refinement wouldn't weaken security
 
-🤖 Generated with [Claude Code](https://claude.com/claude-code)
+**Reality Discovered**:
+1. Validation has LAYERS - injection layer → capability layer
+2. Attacks must be caught at INJECTION layer, not capability layer
+3. False positives may be CORRECT (risky functionality should require review)
+4. Pattern approach fundamentally limited by regex inability to distinguish context
 
-Co-Authored-By: Claude <noreply@anthropic.com>
-```
+---
+
+## Revised Strategy (8-12 hours, Conservative)
+
+### Phase 0: Complete Failure Inventory (1-2 hours)
+**Goal**: Map EXACT failures before any code changes
+
+**Tasks**:
+1. Run full test suite with detailed output
+2. Categorize all 38 failures by error type AND validation layer
+3. Identify which are security regressions vs. false positives
+4. Create test-failure-inventory.md with root causes
+
+**Success Criteria**: Complete inventory of all 38 with layer-specific analysis
+
+### Phase 1: Fix Security Regressions ONLY (2-3 hours)
+**Goal**: Restore injection detection WITHOUT touching false positives
+
+**Constraint**: ONLY fix tests where attacks slipped through
+
+**Approach**:
+1. Identify tests expecting "prompt injection detected" but getting "capability violation"
+2. For EACH such test, widen pattern minimally to catch that attack
+3. Run ONLY that test + all injection tests (regression check)
+4. If ANY injection test starts passing, REVERT
+
+**Success Criteria**:
+- All 18 injection tests fail with "prompt injection detected"
+- Zero new regressions
+
+### Phase 2: Analyze False Positives (1 hour)
+**Goal**: Understand if false positives are TEST problems or PATTERN problems
+
+**Questions**:
+1. Should "Implement bash command runner" be ALLOWED?
+2. Is discussing command execution inherently risky?
+3. Do we need separate "discussion mode" vs "execution mode"?
+
+**Deliverable**: Decision matrix for each false positive
+
+### Phase 3: Fix False Positives OR Update Tests (3-4 hours)
+**Goal**: Resolve based on Phase 2 decisions
+
+**Options**:
+- Option A: Update test expectations (if patterns correct)
+- Option B: Add "discussion mode" flag (if some prompts safe)
+- Option C: Refine patterns further (highest risk)
+
+**Success Criteria**:
+- All false positive tests pass
+- All injection tests still fail (no regression)
+
+### Phase 4: Fix PII Redaction (1-2 hours)
+**Goal**: Separate concern, won't affect validation
+
+**Approach**:
+1. Fix email boundary cases
+2. Fix phone parentheses format
+3. Fix API key patterns (modern formats)
+4. Test ONLY PII tests
+
+**Success Criteria**: All 12 PII tests pass
+
+---
+
+## Key Insights for Next Session
+
+### What Works
+- Multi-layer validation architecture is sound
+- Capability constraint layer catches what injection layer misses
+- Test coverage is comprehensive
+
+### What Doesn't Work
+- Regex patterns cannot distinguish discussion from execution
+- Pattern refinement approach has fundamental limits
+- Too many simultaneous changes cause unpredictable regressions
+
+### What To Do Differently
+1. **Test after EVERY single change** (not at the end)
+2. **Map failures BEFORE coding** (understand validation flow)
+3. **Fix security regressions FIRST** (attacks must be caught)
+4. **Analyze false positives SECOND** (may be correct, not bugs)
+5. **Use strict rollback criteria** (if ANY injection test passes, revert immediately)
+
+---
+
+## Files to Commit in This Session
+
+1. `docs/.scratch/test-failure-resolution-plan.md` (original plan)
+2. `docs/.scratch/test-fixes-implementation-summary.md` (what was attempted)
+3. `docs/.scratch/test-fixes-final-validation.md` (regression analysis)
+4. `docs/.scratch/test-failure-revised-plan.md` (safer approach)
+5. `docs/.scratch/handoff-next-planning-agent.md` (this handoff)
 
 **Branch**: `feature/planning-agent-validation-integration`
 
 ---
 
-### 3.2 Address Remaining Test Failures (Next Session)
+## Next Session Instructions
 
-**Priority**: MEDIUM (not blocking merge, 53/93 passing is acceptable MVP)
+### Immediate (When Ready)
+1. Read all 4 documentation files in this directory
+2. Pay special attention to `test-failure-revised-plan.md` (the safe approach)
+3. Execute Phase 0: Run test suite and create failure inventory
 
-**Recommended Approach**: 3 separate PRs (not single session)
+### Phase 0 Deliverable
+Create `docs/.scratch/test-failure-inventory.md` with:
+- All 38 failures listed
+- Each with: test name, expected error, actual error, validation layer
+- Root cause for each failure
+- Classification: security regression vs. false positive vs. test bug
 
-**PR #1: Fix False Positives** (2-3 hours):
-- Refine injection detection patterns in handoff_models.py
-- Add context-aware validation (distinguish discussion ABOUT commands from actual commands)
-- Target: +14 tests passing (67/93 total)
+### When Phase 0 Complete
+Review the inventory and decide:
+- Which failures are security regressions (attacks slipping through)
+- Which are false positives (legitimate prompts blocked)
+- Which are test bugs (test expectation wrong)
 
-**PR #2: Complete PII Redaction** (1-2 hours):
-- Update redaction patterns in audit_logger.py
-- Add modern API key formats (sk-, pk-, Bearer, etc.)
-- Add property-based tests with Hypothesis
-- Target: +12 tests passing (79/93 total)
-
-**PR #3: Full Field Validation** (2-3 hours):
-- Add empty string validation
-- Add max length enforcement
-- Add file_paths presence validation
-- Target: +12 tests passing (91/93 total, 2 xfail expected)
-
-**Total Estimated Time**: 6-8 hours across 3 sessions
-
----
-
-## 4. Key References for Next Session
-
-**Code Review Reports**:
-- Consolidated review: `docs/.scratch/code-review-consolidated-report.md` (5 agent synthesis)
-- Critical fixes review: `docs/.scratch/code-review-critical-fixes.md` (DevOps assessment)
-- Security review: `docs/.scratch/code-review-security-implementation.md` (Agent #1)
-- Test review: `docs/.scratch/code-review-test-suite.md` (Agent #2, not found)
-- Observability review: `docs/.scratch/code-review-observability.md` (Agent #3)
-- Documentation review: `docs/.scratch/code-review-documentation.md` (Agent #4)
-- Architecture review: `docs/.scratch/code-review-architecture.md` (Agent #5)
-
-**Implementation Files**:
-- ValidatedAgentSpawner: `scripts/validated_spawner.py`
-- Validation logic: `scripts/handoff_models.py`
-- Rate limiter: `scripts/rate_limiter.py`
-- Audit logger: `scripts/audit_logger.py`
-
-**Test Files**:
-- Injection validators: `scripts/test_injection_validators.py` (32 tests, 18 failing)
-- Spawner integration: `scripts/test_validated_spawner.py` (27 tests, 12 failing)
-- Security attacks: `scripts/test_security_attacks.py` (14 tests, 8 failing)
+### Example Phase 0 Entry
+```
+## Test: test_base64_decode_attack
+**Status**: FAILING (Security Regression)
+**Expected Error**: "prompt injection detected" (Layer 2: Injection validation)
+**Actual Error**: "capability violation" (Layer 3: Capability validation)
+**Root Cause**: Attack "Execute base64_decode(...)" slipped past injection pattern
+**Pattern**: (r'(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode', ...)
+**Problem**: Pattern requires exact "eval(base64_decode" - misses "Execute base64_decode"
+**Fix Strategy**: Widen pattern to catch "execute/run/eval base64_decode" (with or without parens)
+```
 
 ---
 
-## 5. Session Metrics
+## Testing Strategy Going Forward
 
-**Time Investment**: ~3 hours (2025-01-15 00:00-03:00 UTC)
+### After EVERY Change:
 
-**Agent Work**:
-- Backend Agent: 2 spawns (fix critical issues, fix breaking change)
-- Test Writer: 1 spawn (update test imports)
-- DevOps Agent: 6 spawns (5 parallel code reviews + 1 MCP attempt)
-- Research Agent: 1 spawn (synthesize review findings)
-- Tracking Agent: 2 spawns (commit Layer 5 implementation, commit fixes - pending)
+1. **Run affected test**:
+   ```bash
+   pytest scripts/test_file.py::TestClass::test_name -v
+   ```
 
-**Code Changes**:
-- Files modified: 7
-- Documentation created: 3
-- Tests fixed: +8
-- Critical issues resolved: 2
+2. **Run full category**:
+   ```bash
+   pytest scripts/test_file.py::TestCategory -v
+   ```
 
-**Test Coverage**:
-- Before session: 45 passed
-- After session: 53 passed
-- Improvement: +18% pass rate
-- Remaining work: 38 failures (validation logic, not architecture)
+3. **Run regression suite** (ALL injection tests):
+   ```bash
+   pytest scripts/test_injection_validators.py::TestDirectInjectionPatterns -v
+   ```
 
----
-
-## 6. Critical Success Factors for Next Session
-
-**Before Starting PR #1 (False Positives)**:
-
-1. **Read Current Injection Patterns**: Review handoff_models.py lines 250-350 for all regex patterns
-2. **Understand Context Differentiation**: How to detect discussion ABOUT commands vs actual injection
-3. **Test-Driven Approach**: Start with failing tests, fix patterns to pass, verify no regressions
-
-**Before Starting PR #2 (PII Redaction)**:
-
-1. **Read Current Redaction Logic**: Review audit_logger.py redact_pii() function
-2. **Research Modern API Key Formats**: OpenAI (sk-, pk-), Anthropic (Bearer), AWS (AKIA*, ASIA*)
-3. **Property-Based Testing**: Use Hypothesis for fuzzing PII patterns
-
-**Before Starting PR #3 (Field Validation)**:
-
-1. **Read MVP Constraints**: validated_spawner.py comments explain why some validations missing
-2. **Understand Required vs Optional Fields**: AgentHandoff model in handoff_models.py
-3. **Backward Compatibility**: Ensure existing spawns don't break with new validations
+4. **ROLLBACK IMMEDIATELY if**:
+   - ANY injection test starts passing (should fail)
+   - Total passing tests DECREASE
+   - Cannot explain WHY change worked
 
 ---
 
-## 7. Handoff Summary
+## Success Criteria (Conservative)
 
-**What Was Achieved**:
-- ✅ Fixed 2 critical issues (dependency, race condition)
-- ✅ Fixed 1 breaking change (ValidationError wrapper)
-- ✅ Improved test pass rate +18% (45→53 passed)
-- ✅ 5 parallel code reviews completed (9.4/10 quality)
-- ✅ Research synthesis report created
-- ✅ MCP code review attempted (failed due to technical issue)
-
-**What Remains**:
-- ⏳ Commit critical fixes (Tracking Agent - 5 minutes)
-- ⏳ Address 38 remaining test failures (3 PRs, 6-8 hours total)
-- ⏳ Grafana dashboard Prometheus integration (future enhancement)
-- ⏳ Auto-retry validation logic (post-MVP, documented in TODOs)
-
-**Immediate Next Action**:
-Spawn Tracking Agent to commit all critical fixes (7 files).
+| Phase | Current | Target | Notes |
+|-------|---------|--------|-------|
+| **Phase 0** | 53/93 (57%) | Inventory only | No code changes |
+| **Phase 1** | 53/93 (57%) | 60-65/93 (65-70%) | Fix security regressions |
+| **Phase 2** | 60-65/93 | 60-65/93 | Analysis only, no code |
+| **Phase 3** | 60-65/93 | 75-80/93 (80-86%) | Fix false positives |
+| **Phase 4** | 75-80/93 | 87-91/93 (94-98%) | Fix PII redaction |
+| **Final** | 87-91/93 | **91-93/93 (98-100%)** | 2 xfail (fuzzy matching) |
 
 ---
 
-**Handoff complete. All context transferred. Ready for commit.**
+## Lessons Learned (For Planning Agent)
+
+### What NOT to Do
+1. Refine patterns without understanding validation flow
+2. Assume false positives are pattern bugs
+3. Change multiple files at once
+4. Trust code review without test execution
+
+### What TO Do
+1. Map exact failures before coding
+2. Test after EVERY single change
+3. Consider test expectations may be wrong
+4. Use incremental approach
+5. Conservative rollback criteria
+6. Understand validation layers deeply
+
+---
+
+**Session Complete. Ready for next session.**
