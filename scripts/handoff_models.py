@@ -22,10 +22,10 @@ Usage:
     })
 """
 
-# CRITICAL: Force CPU usage BEFORE any imports that load PyTorch
+# CRITICAL: Default to CPU-only execution unless CUDA_VISIBLE_DEVICES already set
 # This must be the first code executed (before pydantic, llm_guard, etc.)
 import os
-os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')  # Hide CUDA devices if not already configured
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')  # Respects explicit GPU config if set
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
@@ -39,8 +39,14 @@ import threading
 from llm_guard.input_scanners import PromptInjection
 
 
+class PromptInjectionError(ValueError):
+    """Raised when ML-based prompt injection detection identifies malicious input."""
+    pass
+
+
 # Module-level constant for available agents (single source of truth)
 _AVAILABLE_AGENTS = {
+    'planning': 'Strategic coordinator, delegates to specialist agents',
     'action': 'General implementation (deprecated, prefer specialized agents)',
     'frontend': 'React/Vue/Next.js UI implementation',
     'backend': 'API development, database operations',
@@ -54,6 +60,65 @@ _AVAILABLE_AGENTS = {
     'tracking': 'Linear updates, git operations, PR creation',
     'browser': 'GUI operations, browser automation'
 }
+
+# Agent capability matrix (security-critical)
+# Defines which agents can spawn which targets (privilege escalation prevention)
+_CAPABILITY_MATRIX = {
+    # Planning agent (universal spawning capability)
+    'planning': ['*'],
+
+    # Specialized implementation agents
+    'frontend': ['frontend', 'test-writer', 'browser'],
+    'backend': ['backend', 'test-writer', 'devops'],
+    'devops': ['devops', 'test-writer'],
+    'debug': ['debug', 'test-writer'],
+    'seo': ['seo', 'test-writer'],
+
+    # QA and validation agents
+    'qa': ['test-writer', 'test-auditor'],
+    'test-writer': [],  # No spawning capability
+    'test-auditor': [],  # No spawning capability
+
+    # Coordination agents
+    'research': [],
+    'tracking': [],
+    'browser': [],
+
+    # Deprecated agents (maintain for backward compatibility)
+    'action': ['action', 'test-writer'],
+}
+
+
+def _validate_capability_matrix():
+    """
+    Validate capability matrix consistency with available agents.
+
+    Ensures all matrix keys exist in _AVAILABLE_AGENTS and vice versa
+    to catch drift when new agents are added.
+
+    Raises:
+        AssertionError: If matrix keys don't match available agents
+    """
+    matrix_agents = set(_CAPABILITY_MATRIX.keys())
+    available_agents = set(_AVAILABLE_AGENTS.keys())
+
+    # All matrix keys should be available agents
+    unknown_in_matrix = matrix_agents - available_agents
+    assert not unknown_in_matrix, (
+        f"Capability matrix contains unknown agents: {unknown_in_matrix}. "
+        f"Add to _AVAILABLE_AGENTS or remove from matrix."
+    )
+
+    # All available agents should be in matrix
+    missing_from_matrix = available_agents - matrix_agents
+    assert not missing_from_matrix, (
+        f"Available agents missing from capability matrix: {missing_from_matrix}. "
+        f"Add spawning rules to _CAPABILITY_MATRIX."
+    )
+
+
+# Run validation at module load
+_validate_capability_matrix()
 
 # LLM Guard scanner (initialized lazily on first use)
 _INJECTION_SCANNER = None
@@ -287,7 +352,7 @@ class AgentHandoff(BaseModel):
             )
 
             if not is_valid:
-                raise ValueError(
+                raise PromptInjectionError(
                     f"Potential prompt injection detected (OWASP LLM01).\n\n"
                     f"Risk score: {risk_score:.3f} (threshold: 0.7)\n"
                     f"Confidence: {risk_score * 100:.1f}% likely malicious\n\n"
@@ -307,6 +372,9 @@ class AgentHandoff(BaseModel):
             # NOTE: Ruff TRY003/TRY301 - Long inline error messages intentionally kept
             # for LLM/user guidance and security diagnostics. Rich error context is critical
             # for debugging prompt injection detection failures.
+        except PromptInjectionError:
+            # Re-raise our own validation errors
+            raise
         except Exception as e:
             # SECURITY TRADE-OFF: Fail-open strategy
             #
@@ -325,11 +393,7 @@ class AgentHandoff(BaseModel):
             # This decision favors uninterrupted agent operations while accepting temporary
             # security degradation. Review this trade-off based on your threat model.
 
-            # If LLM Guard fails (model not loaded, etc.), fall back to basic validation
-            # Don't block legitimate traffic due to scanner failures
-            if "prompt injection" in str(e).lower():
-                # Re-raise validation errors from our own ValueError above
-                raise
+            # Scanner failure - fail open with logging
 
             # Log scanner failure for monitoring/alerting
             logger = logging.getLogger(__name__)
@@ -498,46 +562,17 @@ class AgentHandoff(BaseModel):
         spawning_agent = os.getenv('IW_SPAWNING_AGENT')
         target_agent = self.agent_name
 
-        # Capability matrix (spawner → allowed targets)
-        # NOTE: This matrix is security-critical. Changes require security review.
-        capability_matrix = {
-            # Planning Agent: Universal capability (trusted coordinator)
-            'planning': ['*'],
-
-            # Test Writer Agent or Test Auditor Agent: Can spawn test-related agents only
-            'qa': ['test-writer', 'test-auditor'],
-
-            # Implementation agents: Can spawn self + tests + related infra
-            'frontend': ['frontend', 'test-writer'],
-            'backend': ['backend', 'test-writer', 'devops'],
-            'devops': ['devops', 'test-writer'],
-            'debug': ['debug', 'test-writer'],
-            'seo': ['seo', 'test-writer'],
-
-            # Test agents: No spawning capability (leaf nodes)
-            'test-writer': [],
-            'test-auditor': [],
-
-            # Research/tracking/browser: No spawning capability (specialized ops)
-            'research': [],
-            'tracking': [],
-            'browser': [],
-
-            # Deprecated agents (maintain for backward compatibility)
-            'action': ['action', 'test-writer'],
-        }
-
-        # Get allowed targets for spawning agent
-        allowed_targets = capability_matrix.get(spawning_agent, [])
+        # Get allowed targets for spawning agent (from module constant)
+        allowed_targets = _CAPABILITY_MATRIX.get(spawning_agent, [])
 
         # Validate spawning_agent is recognized (catch typos/misconfigurations)
-        if spawning_agent not in capability_matrix:
+        if spawning_agent not in _CAPABILITY_MATRIX:
             raise ValueError(
                 f"Unknown spawning agent: '{spawning_agent}'.\n\n"
-                f"Valid spawning agents: {', '.join(capability_matrix.keys())}\n\n"
+                f"Valid spawning agents: {', '.join(_CAPABILITY_MATRIX.keys())}\n\n"
                 "This indicates:\n"
                 "  1. Typo in spawning_agent parameter\n"
-                "  2. New agent not added to capability_matrix\n"
+                "  2. New agent not added to _CAPABILITY_MATRIX\n"
                 "  3. IW_SPAWNING_AGENT environment variable incorrectly set"
             )
 
@@ -560,7 +595,7 @@ class AgentHandoff(BaseModel):
                 "  3. Attack attempt (malicious agent trying to spawn privileged agent)\n\n"
                 "If this is legitimate:\n"
                 "  - Delegate through Planning Agent instead\n"
-                "  - Update capability_matrix in handoff_models.py if new workflow requires it\n"
+                "  - Update _CAPABILITY_MATRIX in handoff_models.py if new workflow requires it\n"
                 "  - Contact security team for capability matrix changes"
             )
 
