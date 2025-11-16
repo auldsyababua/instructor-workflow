@@ -2,6 +2,9 @@
 instructor>=1.0.0
 anthropic>=0.21.0
 
+# Security: Prompt injection detection
+llm-guard>=0.3.0
+
 # Observability integration
 requests>=2.31.0
 

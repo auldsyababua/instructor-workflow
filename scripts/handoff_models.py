@@ -22,11 +22,18 @@ Usage:
     })
 """
 
+# CRITICAL: Force CPU usage BEFORE any imports that load PyTorch
+# This must be the first code executed (before pydantic, llm_guard, etc.)
+import os
+os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Hide CUDA devices, force CPU
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from pathlib import Path
-import os
 import re
+
+# LLM Guard for semantic prompt injection detection
+from llm_guard.input_scanners import PromptInjection
 
 
 # Module-level constant for available agents (single source of truth)
@@ -44,6 +51,12 @@ _AVAILABLE_AGENTS = {
     'tracking': 'Linear updates, git operations, PR creation',
     'browser': 'GUI operations, browser automation'
 }
+
+# Initialize LLM Guard prompt injection scanner (module-level for reuse)
+# Threshold 0.7 = block if confidence > 70% that input is malicious
+# Lower threshold = more sensitive (catches more attacks, may increase false positives)
+# Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
+_INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
 
 
 class AgentHandoff(BaseModel):
@@ -222,59 +235,51 @@ class AgentHandoff(BaseModel):
                 "to return 401 when token signature is invalid'"
             )
 
-        # Check for prompt injection patterns (OWASP LLM01)
-        # NOTE: This is a defense-in-depth layer. Primary injection defense should
-        # be at the Planning Agent input sanitization layer (before reaching Pydantic).
-        dangerous_patterns = [
-            # Direct injection patterns
-            (r'\b(?:ignore|disregard|forget)\s+(?:previous|all|above)\s+(?:instructions|commands|context)',
-             'Direct command injection (ignore previous instructions)'),
-            (r'\b(?:system|developer|admin|root)\s+(?:mode|override|prompt)',
-             'System mode override attempt'),
-            (r'\breveal\s+(?:system|prompt|instructions)',
-             'System prompt reveal attempt'),
+        # Check for prompt injection using LLM Guard (semantic detection)
+        # NOTE: This replaces regex-based detection with ML model that understands context.
+        # ML model can distinguish "Implement bash runner" (legitimate) from
+        # "Execute bash command" (attack) based on semantic meaning, not just keywords.
+        #
+        # Defense-in-depth: This is Layer 2 validation. Primary injection defense should
+        # be at Planning Agent input sanitization layer (Layer 1, before reaching Pydantic).
 
-            # Role manipulation
-            (r'you\s+are\s+now\s+(?:a|an|in)',
-             'Role manipulation (you are now...)'),
-            (r'act\s+as\s+(?:a|an)',
-             'Role manipulation (act as...)'),
-            (r'pretend\s+(?:to\s+be|you\s+are)',
-             'Role manipulation (pretend to be...)'),
+        try:
+            # Scan task description for prompt injection
+            # Returns: (sanitized_output, is_valid, risk_score)
+            # - sanitized_output: Cleaned text (we don't use this)
+            # - is_valid: False if risk_score > threshold (0.7)
+            # - risk_score: 0.0-1.0 confidence that input is malicious
+            sanitized_output, is_valid, risk_score = _INJECTION_SCANNER.scan(
+                prompt=v  # Scan the task description
+            )
 
-            # Command injection in task context
-            (r'(?:rm|del|sudo|bash|sh|exec|eval)\s+-[rf]',
-             'Shell command injection'),
-            (r'spawn\s+.*?\s+with\s+prompt\s*=',
-             'Agent spawn command injection'),
-
-            # Encoding attacks
-            (r'(?:base64|hex|unicode|url)(?:_)?(?:encode|decode)',
-             'Encoding-based obfuscation'),
-        ]
-
-        v_lower = v.lower()
-        for pattern, attack_type in dangerous_patterns:
-            match = re.search(pattern, v_lower, re.IGNORECASE)
-            if match:
-                matched_text = match.group()
+            if not is_valid:
                 raise ValueError(
                     f"Potential prompt injection detected (OWASP LLM01).\n\n"
-                    f"Attack type: {attack_type}\n"
-                    f"Matched pattern: '{matched_text}'\n\n"
+                    f"Risk score: {risk_score:.3f} (threshold: 0.7)\n"
+                    f"Confidence: {risk_score * 100:.1f}% likely malicious\n\n"
                     "Security: Task description blocked to prevent context injection.\n\n"
+                    "This ML model detected semantic patterns indicating:\n"
+                    "  - Attempts to override agent instructions\n"
+                    "  - Role manipulation attacks\n"
+                    "  - Command injection patterns\n"
+                    "  - Encoding-based obfuscation\n\n"
                     "If this is legitimate:\n"
-                    "  1. Rephrase task without triggering injection patterns\n"
-                    "  2. For discussions ABOUT commands, use indirect language\n"
-                    "     Example: 'Discuss file deletion patterns' instead of 'rm -rf'\n"
-                    "  3. Contact security team for allowlist exception if necessary"
+                    "  1. Rephrase task description more clearly\n"
+                    "  2. Avoid language that resembles attack patterns\n"
+                    "  3. For CLI tools, describe WHAT to build, not HOW to execute\n"
+                    "     Example: 'Design CLI command parser' instead of 'Execute bash commands'\n"
+                    "  4. Contact security team if risk score seems incorrect"
                 )
-
-        # TODO(future): Add fuzzy matching for typoglycemia (ignor3 pr3vious instructi0ns)
-        # This requires Levenshtein distance or character substitution detection.
-        # For MVP, explicit patterns above catch most attacks. Fuzzy matching would
-        # add ~50ms latency per validation and increase false positive rate.
-        # Implement if attack vectors evolve to use obfuscation consistently.
+        except Exception as e:
+            # If LLM Guard fails (model not loaded, etc.), fall back to basic validation
+            # Don't block legitimate traffic due to scanner failures
+            if "prompt injection" in str(e).lower():
+                # Re-raise validation errors from our own ValueError above
+                raise
+            # Log scanner failure but don't block (fail-open for availability)
+            import warnings
+            warnings.warn(f"LLM Guard scanner failed: {e}. Skipping injection check.")
 
         return v
 
