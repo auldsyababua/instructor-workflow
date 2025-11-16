@@ -76,6 +76,8 @@ def _get_injection_scanner():
         # Threshold 0.7 = block if confidence > 70% that input is malicious
         # Lower threshold = more sensitive (catches more attacks, may increase false positives)
         # Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
+        # use_onnx=False: Disable ONNX runtime to ensure compatibility with CPU-only execution
+        # and avoid ONNX dependency issues in deployment environments
         _INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
     return _INJECTION_SCANNER
 
@@ -514,6 +516,17 @@ class AgentHandoff(BaseModel):
 
         # Get allowed targets for spawning agent
         allowed_targets = capability_matrix.get(spawning_agent, [])
+
+        # Validate spawning_agent is recognized (catch typos/misconfigurations)
+        if spawning_agent not in capability_matrix:
+            raise ValueError(
+                f"Unknown spawning agent: '{spawning_agent}'.\n\n"
+                f"Valid spawning agents: {', '.join(capability_matrix.keys())}\n\n"
+                "This indicates:\n"
+                "  1. Typo in spawning_agent parameter\n"
+                "  2. New agent not added to capability_matrix\n"
+                "  3. IW_SPAWNING_AGENT environment variable incorrectly set"
+            )
 
         # Check if target is allowed
         # '*' = universal capability (planning agent)
