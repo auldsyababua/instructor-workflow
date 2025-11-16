@@ -25,7 +25,7 @@ Usage:
 # CRITICAL: Force CPU usage BEFORE any imports that load PyTorch
 # This must be the first code executed (before pydantic, llm_guard, etc.)
 import os
-os.environ['CUDA_VISIBLE_DEVICES'] = ''  # Hide CUDA devices, force CPU
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')  # Hide CUDA devices if not already configured
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
@@ -33,6 +33,7 @@ from pathlib import Path
 import re
 import logging
 import hashlib
+import threading
 
 # LLM Guard for semantic prompt injection detection
 from llm_guard.input_scanners import PromptInjection
@@ -56,6 +57,7 @@ _AVAILABLE_AGENTS = {
 
 # LLM Guard scanner (initialized lazily on first use)
 _INJECTION_SCANNER = None
+_SCANNER_LOCK = threading.Lock()
 
 
 def _get_injection_scanner():
@@ -73,12 +75,14 @@ def _get_injection_scanner():
     """
     global _INJECTION_SCANNER
     if _INJECTION_SCANNER is None:
-        # Threshold 0.7 = block if confidence > 70% that input is malicious
-        # Lower threshold = more sensitive (catches more attacks, may increase false positives)
-        # Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
-        # use_onnx=False: Disable ONNX runtime to ensure compatibility with CPU-only execution
-        # and avoid ONNX dependency issues in deployment environments
-        _INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
+        with _SCANNER_LOCK:
+            if _INJECTION_SCANNER is None:
+                # Threshold 0.7 = block if confidence > 70% that input is malicious
+                # Lower threshold = more sensitive (catches more attacks, may increase false positives)
+                # Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
+                # use_onnx=False: Disable ONNX runtime to ensure compatibility with CPU-only execution
+                # and avoid ONNX dependency issues in deployment environments
+                _INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
     return _INJECTION_SCANNER
 
 
@@ -92,6 +96,12 @@ class AgentHandoff(BaseModel):
     - File path validation (repo-relative, no hardcoded paths)
     - Acceptance criteria requirements
     - Cross-field consistency validation
+
+    Environment Variables:
+        IW_SPAWNING_AGENT: Required when using validate_handoff() or constructing
+                          AgentHandoff directly. Must be set to the name of the agent
+                          performing the spawn operation (e.g., 'planning', 'frontend').
+                          If not set, validation will fail with "Unknown spawning agent".
     """
 
     agent_name: str = Field(
@@ -294,6 +304,9 @@ class AgentHandoff(BaseModel):
                     "     Example: 'Design CLI command parser' instead of 'Execute bash commands'\n"
                     "  4. Contact security team if risk score seems incorrect"
                 )
+            # NOTE: Ruff TRY003/TRY301 - Long inline error messages intentionally kept
+            # for LLM/user guidance and security diagnostics. Rich error context is critical
+            # for debugging prompt injection detection failures.
         except Exception as e:
             # SECURITY TRADE-OFF: Fail-open strategy
             #
@@ -690,7 +703,8 @@ def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
             try:
                 return AgentHandoff(**data)
             finally:
-                delattr(_context, 'spawning_agent', None)
+                if hasattr(_context, 'spawning_agent'):
+                    delattr(_context, 'spawning_agent')
 
         Then in validate_capability_constraints:
             spawning_agent = getattr(_context, 'spawning_agent', None)
