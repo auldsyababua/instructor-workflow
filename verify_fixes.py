@@ -21,7 +21,7 @@ try:
     handoff = validate_handoff({
         "agent_name": "research",
         "task_description": "Research authentication patterns for JWT implementation. Document findings in Linear issue with examples and recommendations."
-    })
+    }, spawning_agent='planning')
     print("✅ PASS: 'implementation' does NOT trigger 'implement' keyword")
     print(f"   Agent: {handoff.agent_name}")
     print(f"   Task: {handoff.task_description[:60]}...")
@@ -37,7 +37,7 @@ try:
         "agent_name": "research",
         "task_description": "Research authentication patterns for JWT implementation",
         "file_paths": ["docs/auth-patterns.md"]
-    })
+    }, spawning_agent='planning')
     print("❌ FAIL: Should have raised research file_paths error")
 except Exception as e:
     error_msg = str(e)
@@ -59,7 +59,7 @@ try:
         "agent_name": "backend",
         "task_description": "Just fix stuff in the authentication code",
         "file_paths": ["src/auth.py"]
-    })
+    }, spawning_agent='planning')
     print("❌ FAIL: Should have raised vague pattern error")
 except Exception as e:
     error_msg = str(e)
@@ -81,7 +81,7 @@ try:
         "agent_name": "research",
         "task_description": "Research authentication patterns for JWT implementation",
         "acceptance_criteria": []
-    })
+    }, spawning_agent='planning')
     print("✅ PASS: Research task with 'implementation' in description allowed without acceptance_criteria")
     print(f"   Agent: {handoff.agent_name}")
     print(f"   Acceptance Criteria: {handoff.acceptance_criteria}")
@@ -98,7 +98,7 @@ try:
         "task_description": "Research authentication patterns for JWT implementation",
         "context": None,
         "blockers": None
-    })
+    }, spawning_agent='planning')
     print("✅ PASS: Optional fields can be None")
     print(f"   Context: {handoff.context}")
     print(f"   Blockers: {handoff.blockers}")
@@ -114,7 +114,7 @@ try:
         "agent_name": "tracking",
         "task_description": "Update Linear issue and create PR for authentication feature",
         "file_paths": ["src/auth.py"]
-    })
+    }, spawning_agent='planning')
     print("❌ FAIL: Should have raised tracking file_paths error")
 except Exception as e:
     error_msg = str(e)

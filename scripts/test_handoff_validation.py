@@ -41,7 +41,7 @@ class TestValidHandoffs:
             "context": "Integrate with auth API from LAW-123"
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "frontend"
         assert len(handoff.file_paths) == 2
@@ -71,7 +71,7 @@ class TestValidHandoffs:
             ]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "backend"
         assert len(handoff.deliverables) == 2
@@ -86,7 +86,7 @@ class TestValidHandoffs:
             )
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "research"
         assert handoff.file_paths == []
@@ -112,7 +112,7 @@ class TestValidHandoffs:
             ]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "devops"
         assert len(handoff.file_paths) == 3
@@ -136,7 +136,7 @@ class TestValidHandoffs:
             ]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "test-writer"
         assert len(handoff.acceptance_criteria) == 4
@@ -156,7 +156,7 @@ class TestInvalidAgentNames:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "Invalid agent name 'invalid-agent'" in error_msg
@@ -171,7 +171,7 @@ class TestInvalidAgentNames:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "frontent" in error_msg
@@ -186,7 +186,7 @@ class TestInvalidAgentNames:
             "acceptance_criteria": ["[ ] Form renders correctly"]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "frontend"  # Normalized to lowercase
 
@@ -205,7 +205,7 @@ class TestInvalidTaskDescriptions:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "too_short" in error_msg.lower()
@@ -219,7 +219,7 @@ class TestInvalidTaskDescriptions:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "contains vague patterns" in error_msg.lower()
@@ -235,7 +235,7 @@ class TestInvalidTaskDescriptions:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "contains vague patterns" in error_msg.lower()
@@ -257,7 +257,7 @@ class TestInvalidFilePaths:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "hardcoded user or server directory" in error_msg.lower()
@@ -272,7 +272,7 @@ class TestInvalidFilePaths:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "hardcoded user or server directory" in error_msg.lower()
@@ -286,7 +286,7 @@ class TestInvalidFilePaths:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "hardcoded user or server directory" in error_msg.lower()
@@ -300,7 +300,7 @@ class TestInvalidFilePaths:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "parent directory traversal" in error_msg.lower()
@@ -315,7 +315,7 @@ class TestInvalidFilePaths:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "mixes path separators" in error_msg.lower()
@@ -336,7 +336,7 @@ class TestInvalidAcceptanceCriteria:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "too short" in error_msg.lower()
@@ -352,7 +352,7 @@ class TestInvalidAcceptanceCriteria:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "too vague" in error_msg.lower()
@@ -368,7 +368,7 @@ class TestInvalidAcceptanceCriteria:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "too short" in error_msg.lower()
@@ -389,7 +389,7 @@ class TestCrossFieldValidation:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "requires file_paths" in error_msg.lower()
@@ -405,7 +405,7 @@ class TestCrossFieldValidation:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "require acceptance_criteria" in error_msg.lower()
@@ -421,7 +421,7 @@ class TestCrossFieldValidation:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "test-writer" in error_msg.lower()
@@ -436,7 +436,7 @@ class TestCrossFieldValidation:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "research agent" in error_msg.lower()
@@ -451,7 +451,7 @@ class TestCrossFieldValidation:
         }
 
         with pytest.raises(ValidationError) as exc_info:
-            validate_handoff(handoff_data)
+            validate_handoff(handoff_data, spawning_agent='planning')
 
         error_msg = str(exc_info.value)
         assert "tracking agent" in error_msg.lower()
@@ -498,7 +498,7 @@ class TestEdgeCases:
             "acceptance_criteria": []  # Empty is OK for research
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.acceptance_criteria == []
 
@@ -511,7 +511,7 @@ class TestEdgeCases:
             "blockers": None
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.context is None
         assert handoff.blockers is None
@@ -523,7 +523,7 @@ class TestEdgeCases:
             "task_description": "x" * 20,  # Exactly 20 chars
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert len(handoff.task_description) == 20
 
@@ -536,7 +536,7 @@ class TestEdgeCases:
             "acceptance_criteria": ["[ ] Button renders correctly"]
         }
 
-        handoff = validate_handoff(handoff_data)
+        handoff = validate_handoff(handoff_data, spawning_agent='planning')
 
         assert handoff.agent_name == "frontend"  # Stripped and normalized
 
@@ -556,7 +556,7 @@ class TestRetryBehavior:
         }
 
         with pytest.raises(ValidationError):
-            validate_handoff(invalid_data)
+            validate_handoff(invalid_data, spawning_agent='planning')
 
         # Second attempt: Corrected agent name
         corrected_data = {
@@ -566,7 +566,7 @@ class TestRetryBehavior:
             "acceptance_criteria": ["[ ] Form validates email format"]
         }
 
-        handoff = validate_handoff(corrected_data)
+        handoff = validate_handoff(corrected_data, spawning_agent='planning')
 
         assert handoff.agent_name == "frontend"
 
@@ -580,7 +580,7 @@ class TestRetryBehavior:
         }
 
         with pytest.raises(ValidationError):
-            validate_handoff(vague_data)
+            validate_handoff(vague_data, spawning_agent='planning')
 
         # Second attempt: More specific
         specific_data = {
@@ -596,7 +596,7 @@ class TestRetryBehavior:
             ]
         }
 
-        handoff = validate_handoff(specific_data)
+        handoff = validate_handoff(specific_data, spawning_agent='planning')
 
         assert handoff.agent_name == "backend"
         assert len(handoff.acceptance_criteria) == 2
@@ -611,7 +611,7 @@ class TestRetryBehavior:
         }
 
         with pytest.raises(ValidationError):
-            validate_handoff(absolute_paths_data)
+            validate_handoff(absolute_paths_data, spawning_agent='planning')
 
         # Second attempt: Repo-relative paths
         relative_paths_data = {
@@ -621,7 +621,7 @@ class TestRetryBehavior:
             "acceptance_criteria": ["[ ] Form validates email format"]
         }
 
-        handoff = validate_handoff(relative_paths_data)
+        handoff = validate_handoff(relative_paths_data, spawning_agent='planning')
 
         assert handoff.file_paths == ["src/components/Login.tsx"]
 

@@ -249,7 +249,7 @@ class AgentHandoff(BaseModel):
             # - sanitized_output: Cleaned text (we don't use this)
             # - is_valid: False if risk_score > threshold (0.7)
             # - risk_score: 0.0-1.0 confidence that input is malicious
-            sanitized_output, is_valid, risk_score = _INJECTION_SCANNER.scan(
+            _sanitized_output, is_valid, risk_score = _INJECTION_SCANNER.scan(
                 prompt=v  # Scan the task description
             )
 
@@ -594,7 +594,7 @@ class AgentHandoff(BaseModel):
 
 # --- VALIDATION FUNCTIONS ---
 
-def validate_handoff(data: dict, spawning_agent: str = 'unknown') -> AgentHandoff:
+def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
     """
     Validate handoff data and return AgentHandoff model.
 
@@ -678,7 +678,7 @@ if __name__ == "__main__":
     }
 
     try:
-        handoff = validate_handoff(valid_handoff)
+        handoff = validate_handoff(valid_handoff, spawning_agent='planning')
         print("✅ Valid handoff:")
         print(f"  Agent: {handoff.agent_name}")
         print(f"  Task: {handoff.task_description[:50]}...")
@@ -698,7 +698,7 @@ if __name__ == "__main__":
     }
 
     try:
-        validate_handoff(invalid_handoff)
+        validate_handoff(invalid_handoff, spawning_agent='planning')
         print("✅ Validation passed (unexpected!)")
     except Exception as e:
         print("❌ Expected validation failure:")
@@ -736,7 +736,7 @@ if __name__ == "__main__":
     }
 
     try:
-        handoff = validate_handoff(backend_handoff)
+        handoff = validate_handoff(backend_handoff, spawning_agent='planning')
         print("✅ Valid handoff:")
         print(f"  Agent: {handoff.agent_name}")
         print(f"  Task: {handoff.task_description[:60]}...")
@@ -757,7 +757,7 @@ if __name__ == "__main__":
     }
 
     try:
-        validate_handoff(invalid_research)
+        validate_handoff(invalid_research, spawning_agent='planning')
         print("✅ Validation passed (unexpected!)")
     except Exception as e:
         print("❌ Expected validation failure:")
