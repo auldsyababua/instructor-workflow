@@ -132,6 +132,9 @@ def _get_injection_scanner():
     Initializes scanner on first use to prevent module import failures
     if LLM Guard models aren't available or environment issues occur.
 
+    Note: First call triggers model download/loading (1-2 seconds latency).
+          Subsequent calls return cached instance (negligible overhead).
+
     Returns:
         PromptInjection: Configured scanner instance
 
@@ -333,6 +336,11 @@ class AgentHandoff(BaseModel):
                 "to return 401 when token signature is invalid'"
             )
 
+        # Layer 2 (Prompt Injection Detection) - OWASP LLM01
+        # Scope: Semantic manipulation (context override, role manipulation, system prompt extraction)
+        # Does NOT detect: Command injection (OWASP LLM07) - Layer 3 responsibility
+        # See: ADR-005 (docs/architecture/adr/005-layer2-layer3-separation.md)
+        #
         # Check for prompt injection using LLM Guard (semantic detection)
         # NOTE: This replaces regex-based detection with ML model that understands context.
         # ML model can distinguish "Implement bash runner" (legitimate) from
