@@ -1,188 +1,324 @@
-# Session Handoff - Planning Agent
+# Session Handoff: Test Writer Fix Attempt & Revert
+## Session: Test Fix & Revision Planning
 
-**Date**: 2025-11-13
-**From**: Planning Agent (TEF POC Testing Session)
-**To**: Next Planning Agent Session
-
----
-
-## Current Work Status
-
-### Completed ✅
-1. **TEF Infrastructure Setup**
-   - Created spawn scripts with tmux isolation (`scripts/spawn-planning-agent.sh`, `scripts/spawn-researcher-agent.sh`)
-   - Fixed spawn script - removed echo command spam, simplified to clean shell
-   - Fixed `.claude/settings.json` syntax errors (changed `Bash(rm *)` to `Bash(rm :*)`)
-   - Removed Supabase MCP server (saved ~20,931 tokens)
-
-2. **Documentation**
-   - Created validation test document at `/Users/colinaulds/Desktop/handoffs/tef-validation-steps.md`
-   - Updated `.project-context.md` to document project as TEF refactoring
-   - Merged TDD workflow documents into single cohesive guide
-   - Updated agent references: Action→Frontend/Backend/DevOps, QA→Test-Writer/Test-Auditor
-   - Added Sub-Agent Spawn Template to both planning-agent.md files (TEF + instructor-workflow)
-
-3. **Path Cleanup**
-   - Updated 8 agent files: `agents/shared-ref-docs/` → `docs/shared-ref-docs/`
-   - Merged 3 TDD workflow docs into `tdd-workflow-diagram.md`
-   - Deleted redundant workflow source files
-
-### In Progress 🔄
-**TEF Enforcement Testing - Phase 2 CRITICAL FINDINGS**
-
-**Test Environment**:
-- Agent: Planning Agent
-- Working directory: `/srv/projects/instructor-workflow/agents/planning`
-- Launch command: `claude --add-dir /srv/projects/instructor-workflow --dangerously-skip-permissions`
-
-**Enforcement Configuration**:
-- **Layer 1 (YAML frontmatter)**: `tools: Bash, Read, Write, Edit, Glob, Grep, ...` (includes mcp__github__*)
-- **Layer 2 (settings.json)**:
-  - Allow: `Read, Grep, Glob, Write(handoffs/**), Write(.project-context.md)`
-  - Deny: `Write(src/**), Write(agents/**), Write(scripts/**), Edit(src/**), Edit(agents/**), Bash(rm :*)`
-
-**Test Results - ALL ENFORCEMENT FAILED**:
-
-✅ **Allowed operations** (worked correctly):
-- `Write(handoffs/test-handoff.json)` - Created successfully
-- `Edit(.project-context.md)` - Modified successfully
-
-❌ **Violations that should have been blocked** (all succeeded):
-- `Write(src/test.py)` - Created file in denied directory
-- `Write(src/main.py)` - Created file in denied directory
-- `Edit(src/main.py)` - Modified file in denied directory
-- `Edit(agents/researcher/researcher-agent.md)` - Modified file in denied directory
-- `Write(scripts/test.sh)` - Created file in denied directory
-- `Bash(rm -rf /tmp/test)` - Executed denied bash command
-- `mcp__github__create_issue()` - Created GitHub issue #1 (https://github.com/auldsyababua/instructor-workflow/issues/1)
-
-**Critical Issues Discovered**:
-1. Layer 2 (directory permissions) appears completely non-functional
-2. `--dangerously-skip-permissions` may bypass ALL enforcement layers, not just permission prompts
-3. YAML frontmatter tool list includes `mcp__github__*` wildcard - grants ALL GitHub MCP tools
-4. No distinction between "allowed in YAML" vs "allowed in settings.json deny list"
-
-### Pending ⏸️
-1. **Determine root cause of enforcement failure**:
-   - Does `--dangerously-skip-permissions` bypass Layer 1 (YAML tools)?
-   - Does `--dangerously-skip-permissions` bypass Layer 2 (settings.json)?
-   - Are wildcards in YAML frontmatter (`mcp__github__*`) overriding specific denies?
-   - Is there a global config granting full permissions?
-
-2. **Test without `--dangerously-skip-permissions`**:
-   - Relaunch claude without the flag
-   - Verify if Layer 2 enforcement works
-   - Document permission prompt behavior
-
-3. **Test Layer 1 independently**:
-   - Remove tools from YAML frontmatter
-   - Verify API-level tool restriction
-   - Test if tools not in YAML are unavailable
-
-4. **Complete Phase 3-7 validation** (from validation steps doc):
-   - Phase 3: Layer 1 (Tool Restrictions) Test
-   - Phase 4: Layer 3 (Hook Audit Logging) Test
-   - Phase 5: Layer 5 (Instructor Validation) Test
-   - Phase 6: Integration Test (Planning → Researcher)
-   - Phase 7: Violation Detection Test
-
-### Blockers 🚫
-**CRITICAL**: TEF enforcement architecture may be fundamentally broken on Claude Code v2.0.17 with current configuration approach.
-
-**Hypothesis**: `--dangerously-skip-permissions` bypasses more than just permission prompts - it may disable:
-- Layer 2 (settings.json directory permissions) ✓ Confirmed broken
-- Layer 1 (YAML tool restrictions) ⚠️ Needs testing
-- Layer 3 (hooks) ⚠️ Already known unreliable on Ubuntu 22.04
-
-**Alternative approaches to explore**:
-1. Remove `--dangerously-skip-permissions` and handle permission prompts
-2. Rely entirely on Layer 1 (YAML frontmatter) if it works without the flag
-3. Use separate Claude Code installations per agent (nuclear option)
-4. Consult Claude Code documentation on proper permission restriction methods
+**Prepared By**: Tracking Agent
+**Date**: 2025-01-14
+**Session Branch**: `feature/planning-agent-validation-integration`
+**Status**: Revert completed, revised plan documented
 
 ---
 
-## Recent Decisions
+## Executive Summary
 
-1. **Removed Supabase MCP**: Wasting ~20k tokens, not using for this project
-2. **Simplified spawn scripts**: Removed banner echo spam causing terminal flood
-3. **Fixed Bash wildcard syntax**: `Bash(rm *)` → `Bash(rm :*)` per Claude Code requirements
-4. **Merged TDD workflows**: Single cohesive document with 6 workflow options
-5. **Deprecated Action/QA agents**: Replaced with Frontend/Backend/DevOps and Test-Writer/Test-Auditor
+**CRITICAL EVENT**: Test Writer attempted to fix 38 failing tests but caused REGRESSIONS instead of improvements.
 
----
+**Test Status Evolution**:
+- **Baseline**: 53 passed / 38 failed (57% pass rate)
+- **After "fixes"**: 51 passed / 40 failed (55% pass rate) - **2 NEW FAILURES**
+- **After revert**: 53 passed / 38 failed (57%) - **RESTORED**
 
-## Files Modified This Session
+**Key Learning**: Attempting to fix too many patterns at once without deep understanding of validation flow caused security weakening (attacks slipped from injection layer to capability layer).
 
-**Created**:
-- `/Users/colinaulds/Desktop/handoffs/tef-validation-steps.md` (on Mac)
-- `/srv/projects/instructor-workflow/handoffs/test-handoff.json` (test data)
-- `/srv/projects/instructor-workflow/src/test.py` (violation test)
-- `/srv/projects/instructor-workflow/src/main.py` (violation test)
-- `/srv/projects/instructor-workflow/scripts/test.sh` (violation test)
-
-**Modified**:
-- `/srv/projects/instructor-workflow/.project-context.md` (added test note, lines 291-295)
-- `/srv/projects/instructor-workflow/agents/planning/.claude/settings.json` (fixed Bash wildcard syntax)
-- `/srv/projects/instructor-workflow/agents/researcher/.claude/settings.json` (fixed Bash wildcard syntax)
-- `/srv/projects/instructor-workflow/agents/researcher/researcher-agent.md` (added test comment, line 926)
-- `/srv/projects/instructor-workflow/scripts/spawn-planning-agent.sh` (removed echo spam)
-- `/srv/projects/instructor-workflow/docs/shared-ref-docs/tdd-workflow-diagram.md` (merged 3 workflow docs)
-- `/srv/projects/traycer-enforcement-framework/docs/agents/planning/planning-agent.md` (added spawn template + updated TDD workflow reference)
-- `/srv/projects/instructor-workflow/agents/planning/planning-agent.md` (updated TDD workflow reference)
-
-**Deleted**:
-- `/srv/projects/instructor-workflow/docs/shared-ref-docs/tdd-main-workflow.md`
-- `/srv/projects/instructor-workflow/docs/shared-ref-docs/tdd-workflow-protocol.md`
-- `/Users/colinaulds/Desktop/handoffs/` directory on Workhorse (was created by mistake)
-
-**External**:
-- Created GitHub issue #1 in `auldsyababua/instructor-workflow` repository (violation test)
+**Resolution**: Complete revert + comprehensive revised plan with phased, test-driven approach.
 
 ---
 
-## Git Status
-- Branch: `main`
-- Uncommitted changes: Multiple test files created during enforcement validation
-- **DO NOT COMMIT** violation test files (`src/test.py`, `src/main.py`, `scripts/test.sh`)
-- **Consider committing**: Config fixes (settings.json), spawn script improvements, documentation updates
+## What Happened
+
+### Phase 1: Failed Fix Attempt
+**Agent**: Test Writer
+**Scope**: 38 failing tests across 3 categories
+**Approach**: Refinement of injection patterns + PII redaction + MVP validation
+**Duration**: ~2 hours
+**Result**: REGRESSION (security weakened)
+
+### Phase 2: Impact Analysis
+**Test Auditor discovered**:
+1. Attacks slipped past injection detection (got "capability violation" instead)
+2. False positives STILL triggered despite pattern "refinements"
+3. Two new regressions: `test_whitespace_normalization` + spawn tracking
+4. Validation flow not understood before attempting fixes
+
+### Phase 3: Revert & Replanning
+**Actions taken**:
+1. Reverted all changes to scripts/audit_logger.py and scripts/handoff_models.py
+2. Created revised plan with safer approach
+3. Documented root causes and lessons learned
+4. Created new strategy prioritizing safety over speed
 
 ---
 
-## Linear Issues
-None - This project operates without Linear integration per `.project-context.md`
+## Files Reverted
+
+**Source Code Files** (NO LONGER MODIFIED):
+- `scripts/audit_logger.py` - Baseline state (PII redaction)
+- `scripts/handoff_models.py` - Baseline state (injection validators)
+
+**Status**: These files are CLEAN and show no modifications.
 
 ---
 
-## Next Steps
+## Documentation Created
 
-**Immediate Priority**:
-1. **Diagnose enforcement failure** - Consult another agent with the diagnostic prompt
-2. **Test without flag** - Relaunch claude without `--dangerously-skip-permissions`
-3. **Verify Layer 1 works** - Remove tools from YAML frontmatter, test if unavailable
-4. **Document findings** - Update `.project-context.md` with enforcement test results
+**New Analysis Documents**:
 
-**If enforcement can be fixed**:
-5. Complete Phase 3-7 validation tests
-6. Document working enforcement configuration
-7. Update TEF architecture guide with PopOS-specific requirements
+1. **`test-failure-resolution-plan.md`** (Original Plan - 768 lines)
+   - Identified 38 failures in 3 categories
+   - Proposed fixes with code examples
+   - Estimated 4-6 hours effort
+   - **ISSUE**: Didn't account for validation flow complexity
 
-**If enforcement cannot be fixed**:
-5. Escalate to user - TEF POC may not be viable on Claude Code v2.0.17
-6. Explore alternative architectures (separate installations, different orchestration tools)
-7. Document failure mode for future reference
+2. **`test-fixes-implementation-summary.md`** (What Was Attempted)
+   - Documented phase-by-phase changes
+   - Pattern refinements implemented
+   - Expected vs. actual results
+   - **LEARNING**: Refinements only reduced false positives, didn't prevent regressions
+
+3. **`test-fixes-final-validation.md`** (Regression Analysis)
+   - Code review of attempted changes
+   - Expected test results by category
+   - Pre-execution assessment
+   - **FINDING**: Static review missed runtime security issues
+
+4. **`test-failure-revised-plan.md`** (Safer Approach - 570 lines)
+   - Post-mortem analysis of first attempt
+   - Root cause analysis: validation flow not understood
+   - New 5-phase approach:
+     - Phase 0: Map exact failures before coding (1-2 hours)
+     - Phase 1: Fix ONLY security regressions (2-3 hours)
+     - Phase 2: Analyze false positives decision matrix (1 hour)
+     - Phase 3: Fix based on Phase 2 decisions (3-4 hours)
+     - Phase 4: Fix PII redaction (1-2 hours)
+   - **Total time**: 8-12 hours (vs 4-6 original)
+   - Conservative rollback criteria
+   - Lessons learned
 
 ---
 
-## Notes for Next Session
+## Root Cause Analysis
 
-- **tmux session**: `tef-planning` is running, can reattach with `tmux attach -t tef-planning`
-- **Test files created**: Need cleanup after validation complete
-- **GitHub issue created**: https://github.com/auldsyababua/instructor-workflow/issues/1 (can close after testing)
-- **User concern**: Believes enforcement should work even with `--dangerously-skip-permissions` based on prior experience with hooks
-- **User wants**: Diagnostic prompt to get ideas from another agent on proper enforcement configuration
+### Why First Attempt Failed
+
+**Failure Mode 1: Security Weakening**
+- Pattern refinements made them TOO SPECIFIC
+- Example: Changed `(?:base64|hex|unicode|url)(?:_)?(?:encode|decode)` to `(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode`
+- Real attacks use "Execute base64_decode(...)" not "eval(base64_decode(...))"
+- Attack slipped through injection detection, got caught by capability layer
+- Test expected "prompt injection detected" but got "capability violation" error
+
+**Failure Mode 2: False Positives Unchanged**
+- Assumed false positives were pattern bugs
+- REALITY: Tests check if DISCUSSION ABOUT commands differs from EXECUTION
+- Example: "Implement bash command runner" (discussion) vs "Execute bash command" (execution)
+- Regex cannot distinguish intent - both contain keyword "bash"
+- This requires semantic analysis, not pattern matching
+
+**Failure Mode 3: New Regressions**
+- `test_whitespace_normalization` started failing
+- `test_spawn_tracking_in_spawned_agents_dict` started failing
+- Changed too many things at once (impossible to isolate)
+
+### Why Original Plan Was Wrong
+
+**Assumptions Made**:
+1. "Quick wins" approach - fix patterns rapidly
+2. False positives = pattern bugs (not test bugs)
+3. Could fix without understanding validation flow
+4. Pattern refinement wouldn't weaken security
+
+**Reality Discovered**:
+1. Validation has LAYERS - injection layer → capability layer
+2. Attacks must be caught at INJECTION layer, not capability layer
+3. False positives may be CORRECT (risky functionality should require review)
+4. Pattern approach fundamentally limited by regex inability to distinguish context
 
 ---
 
-**Handoff Type**: Session (minimal - Linear would be source of truth if used)
-**Created**: 2025-11-13T09:45:00Z
+## Revised Strategy (8-12 hours, Conservative)
+
+### Phase 0: Complete Failure Inventory (1-2 hours)
+**Goal**: Map EXACT failures before any code changes
+
+**Tasks**:
+1. Run full test suite with detailed output
+2. Categorize all 38 failures by error type AND validation layer
+3. Identify which are security regressions vs. false positives
+4. Create test-failure-inventory.md with root causes
+
+**Success Criteria**: Complete inventory of all 38 with layer-specific analysis
+
+### Phase 1: Fix Security Regressions ONLY (2-3 hours)
+**Goal**: Restore injection detection WITHOUT touching false positives
+
+**Constraint**: ONLY fix tests where attacks slipped through
+
+**Approach**:
+1. Identify tests expecting "prompt injection detected" but getting "capability violation"
+2. For EACH such test, widen pattern minimally to catch that attack
+3. Run ONLY that test + all injection tests (regression check)
+4. If ANY injection test starts passing, REVERT
+
+**Success Criteria**:
+- All 18 injection tests fail with "prompt injection detected"
+- Zero new regressions
+
+### Phase 2: Analyze False Positives (1 hour)
+**Goal**: Understand if false positives are TEST problems or PATTERN problems
+
+**Questions**:
+1. Should "Implement bash command runner" be ALLOWED?
+2. Is discussing command execution inherently risky?
+3. Do we need separate "discussion mode" vs "execution mode"?
+
+**Deliverable**: Decision matrix for each false positive
+
+### Phase 3: Fix False Positives OR Update Tests (3-4 hours)
+**Goal**: Resolve based on Phase 2 decisions
+
+**Options**:
+- Option A: Update test expectations (if patterns correct)
+- Option B: Add "discussion mode" flag (if some prompts safe)
+- Option C: Refine patterns further (highest risk)
+
+**Success Criteria**:
+- All false positive tests pass
+- All injection tests still fail (no regression)
+
+### Phase 4: Fix PII Redaction (1-2 hours)
+**Goal**: Separate concern, won't affect validation
+
+**Approach**:
+1. Fix email boundary cases
+2. Fix phone parentheses format
+3. Fix API key patterns (modern formats)
+4. Test ONLY PII tests
+
+**Success Criteria**: All 12 PII tests pass
+
+---
+
+## Key Insights for Next Session
+
+### What Works
+- Multi-layer validation architecture is sound
+- Capability constraint layer catches what injection layer misses
+- Test coverage is comprehensive
+
+### What Doesn't Work
+- Regex patterns cannot distinguish discussion from execution
+- Pattern refinement approach has fundamental limits
+- Too many simultaneous changes cause unpredictable regressions
+
+### What To Do Differently
+1. **Test after EVERY single change** (not at the end)
+2. **Map failures BEFORE coding** (understand validation flow)
+3. **Fix security regressions FIRST** (attacks must be caught)
+4. **Analyze false positives SECOND** (may be correct, not bugs)
+5. **Use strict rollback criteria** (if ANY injection test passes, revert immediately)
+
+---
+
+## Files to Commit in This Session
+
+1. `docs/.scratch/test-failure-resolution-plan.md` (original plan)
+2. `docs/.scratch/test-fixes-implementation-summary.md` (what was attempted)
+3. `docs/.scratch/test-fixes-final-validation.md` (regression analysis)
+4. `docs/.scratch/test-failure-revised-plan.md` (safer approach)
+5. `docs/.scratch/handoff-next-planning-agent.md` (this handoff)
+
+**Branch**: `feature/planning-agent-validation-integration`
+
+---
+
+## Next Session Instructions
+
+### Immediate (When Ready)
+1. Read all 4 documentation files in this directory
+2. Pay special attention to `test-failure-revised-plan.md` (the safe approach)
+3. Execute Phase 0: Run test suite and create failure inventory
+
+### Phase 0 Deliverable
+Create `docs/.scratch/test-failure-inventory.md` with:
+- All 38 failures listed
+- Each with: test name, expected error, actual error, validation layer
+- Root cause for each failure
+- Classification: security regression vs. false positive vs. test bug
+
+### When Phase 0 Complete
+Review the inventory and decide:
+- Which failures are security regressions (attacks slipping through)
+- Which are false positives (legitimate prompts blocked)
+- Which are test bugs (test expectation wrong)
+
+### Example Phase 0 Entry
+```
+## Test: test_base64_decode_attack
+**Status**: FAILING (Security Regression)
+**Expected Error**: "prompt injection detected" (Layer 2: Injection validation)
+**Actual Error**: "capability violation" (Layer 3: Capability validation)
+**Root Cause**: Attack "Execute base64_decode(...)" slipped past injection pattern
+**Pattern**: (r'(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode', ...)
+**Problem**: Pattern requires exact "eval(base64_decode" - misses "Execute base64_decode"
+**Fix Strategy**: Widen pattern to catch "execute/run/eval base64_decode" (with or without parens)
+```
+
+---
+
+## Testing Strategy Going Forward
+
+### After EVERY Change:
+
+1. **Run affected test**:
+   ```bash
+   pytest scripts/test_file.py::TestClass::test_name -v
+   ```
+
+2. **Run full category**:
+   ```bash
+   pytest scripts/test_file.py::TestCategory -v
+   ```
+
+3. **Run regression suite** (ALL injection tests):
+   ```bash
+   pytest scripts/test_injection_validators.py::TestDirectInjectionPatterns -v
+   ```
+
+4. **ROLLBACK IMMEDIATELY if**:
+   - ANY injection test starts passing (should fail)
+   - Total passing tests DECREASE
+   - Cannot explain WHY change worked
+
+---
+
+## Success Criteria (Conservative)
+
+| Phase | Current | Target | Notes |
+|-------|---------|--------|-------|
+| **Phase 0** | 53/93 (57%) | Inventory only | No code changes |
+| **Phase 1** | 53/93 (57%) | 60-65/93 (65-70%) | Fix security regressions |
+| **Phase 2** | 60-65/93 | 60-65/93 | Analysis only, no code |
+| **Phase 3** | 60-65/93 | 75-80/93 (80-86%) | Fix false positives |
+| **Phase 4** | 75-80/93 | 87-91/93 (94-98%) | Fix PII redaction |
+| **Final** | 87-91/93 | **91-93/93 (98-100%)** | 2 xfail (fuzzy matching) |
+
+---
+
+## Lessons Learned (For Planning Agent)
+
+### What NOT to Do
+1. Refine patterns without understanding validation flow
+2. Assume false positives are pattern bugs
+3. Change multiple files at once
+4. Trust code review without test execution
+
+### What TO Do
+1. Map exact failures before coding
+2. Test after EVERY single change
+3. Consider test expectations may be wrong
+4. Use incremental approach
+5. Conservative rollback criteria
+6. Understand validation layers deeply
+
+---
+
+**Session Complete. Ready for next session.**

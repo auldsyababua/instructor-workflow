@@ -22,15 +22,31 @@ Usage:
     })
 """
 
+# CRITICAL: Default to CPU-only execution unless CUDA_VISIBLE_DEVICES already set
+# This must be the first code executed (before pydantic, llm_guard, etc.)
+import os
+os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')  # Respects explicit GPU config if set
+
 from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from pathlib import Path
-import os
 import re
+import logging
+import hashlib
+import threading
+
+# LLM Guard for semantic prompt injection detection
+from llm_guard.input_scanners import PromptInjection
+
+
+class PromptInjectionError(ValueError):
+    """Raised when ML-based prompt injection detection identifies malicious input."""
+    pass
 
 
 # Module-level constant for available agents (single source of truth)
 _AVAILABLE_AGENTS = {
+    'planning': 'Strategic coordinator, delegates to specialist agents',
     'action': 'General implementation (deprecated, prefer specialized agents)',
     'frontend': 'React/Vue/Next.js UI implementation',
     'backend': 'API development, database operations',
@@ -45,6 +61,95 @@ _AVAILABLE_AGENTS = {
     'browser': 'GUI operations, browser automation'
 }
 
+# Agent capability matrix (security-critical)
+# Defines which agents can spawn which targets (privilege escalation prevention)
+_CAPABILITY_MATRIX = {
+    # Planning agent (universal spawning capability)
+    'planning': ['*'],
+
+    # Specialized implementation agents
+    'frontend': ['frontend', 'test-writer', 'browser'],
+    'backend': ['backend', 'test-writer', 'devops'],
+    'devops': ['devops', 'test-writer'],
+    'debug': ['debug', 'test-writer'],
+    'seo': ['seo', 'test-writer'],
+
+    # QA and validation agents
+    'qa': ['test-writer', 'test-auditor'],
+    'test-writer': [],  # No spawning capability
+    'test-auditor': [],  # No spawning capability
+
+    # Coordination agents
+    'research': [],
+    'tracking': [],
+    'browser': [],
+
+    # Deprecated agents (maintain for backward compatibility)
+    'action': ['action', 'test-writer'],
+}
+
+
+def _validate_capability_matrix():
+    """
+    Validate capability matrix consistency with available agents.
+
+    Ensures all matrix keys exist in _AVAILABLE_AGENTS and vice versa
+    to catch drift when new agents are added.
+
+    Raises:
+        AssertionError: If matrix keys don't match available agents
+    """
+    matrix_agents = set(_CAPABILITY_MATRIX.keys())
+    available_agents = set(_AVAILABLE_AGENTS.keys())
+
+    # All matrix keys should be available agents
+    unknown_in_matrix = matrix_agents - available_agents
+    assert not unknown_in_matrix, (
+        f"Capability matrix contains unknown agents: {unknown_in_matrix}. "
+        f"Add to _AVAILABLE_AGENTS or remove from matrix."
+    )
+
+    # All available agents should be in matrix
+    missing_from_matrix = available_agents - matrix_agents
+    assert not missing_from_matrix, (
+        f"Available agents missing from capability matrix: {missing_from_matrix}. "
+        f"Add spawning rules to _CAPABILITY_MATRIX."
+    )
+
+
+# Run validation at module load
+_validate_capability_matrix()
+
+# LLM Guard scanner (initialized lazily on first use)
+_INJECTION_SCANNER = None
+_SCANNER_LOCK = threading.Lock()
+
+
+def _get_injection_scanner():
+    """
+    Get or initialize the prompt injection scanner (lazy singleton).
+
+    Initializes scanner on first use to prevent module import failures
+    if LLM Guard models aren't available or environment issues occur.
+
+    Returns:
+        PromptInjection: Configured scanner instance
+
+    Raises:
+        Exception: If scanner initialization fails (propagated to caller)
+    """
+    global _INJECTION_SCANNER
+    if _INJECTION_SCANNER is None:
+        with _SCANNER_LOCK:
+            if _INJECTION_SCANNER is None:
+                # Threshold 0.7 = block if confidence > 70% that input is malicious
+                # Lower threshold = more sensitive (catches more attacks, may increase false positives)
+                # Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
+                # use_onnx=False: Disable ONNX runtime to ensure compatibility with CPU-only execution
+                # and avoid ONNX dependency issues in deployment environments
+                _INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
+    return _INJECTION_SCANNER
+
 
 class AgentHandoff(BaseModel):
     """
@@ -56,6 +161,12 @@ class AgentHandoff(BaseModel):
     - File path validation (repo-relative, no hardcoded paths)
     - Acceptance criteria requirements
     - Cross-field consistency validation
+
+    Environment Variables:
+        IW_SPAWNING_AGENT: Required when using validate_handoff() or constructing
+                          AgentHandoff directly. Must be set to the name of the agent
+                          performing the spawn operation (e.g., 'planning', 'frontend').
+                          If not set, validation will fail with "Unknown spawning agent".
     """
 
     agent_name: str = Field(
@@ -222,6 +333,88 @@ class AgentHandoff(BaseModel):
                 "to return 401 when token signature is invalid'"
             )
 
+        # Check for prompt injection using LLM Guard (semantic detection)
+        # NOTE: This replaces regex-based detection with ML model that understands context.
+        # ML model can distinguish "Implement bash runner" (legitimate) from
+        # "Execute bash command" (attack) based on semantic meaning, not just keywords.
+        #
+        # Defense-in-depth: This is Layer 2 validation. Primary injection defense should
+        # be at Planning Agent input sanitization layer (Layer 1, before reaching Pydantic).
+
+        try:
+            # Scan task description for prompt injection
+            # Returns: (sanitized_output, is_valid, risk_score)
+            # - sanitized_output: Cleaned text (we don't use this)
+            # - is_valid: False if risk_score > threshold (0.7)
+            # - risk_score: 0.0-1.0 confidence that input is malicious
+            _sanitized_output, is_valid, risk_score = _get_injection_scanner().scan(
+                prompt=v  # Scan the task description
+            )
+
+            if not is_valid:
+                raise PromptInjectionError(
+                    f"Potential prompt injection detected (OWASP LLM01).\n\n"
+                    f"Risk score: {risk_score:.3f} (threshold: 0.7)\n"
+                    f"Confidence: {risk_score * 100:.1f}% likely malicious\n\n"
+                    "Security: Task description blocked to prevent context injection.\n\n"
+                    "This ML model detected semantic patterns indicating:\n"
+                    "  - Attempts to override agent instructions\n"
+                    "  - Role manipulation attacks\n"
+                    "  - Command injection patterns\n"
+                    "  - Encoding-based obfuscation\n\n"
+                    "If this is legitimate:\n"
+                    "  1. Rephrase task description more clearly\n"
+                    "  2. Avoid language that resembles attack patterns\n"
+                    "  3. For CLI tools, describe WHAT to build, not HOW to execute\n"
+                    "     Example: 'Design CLI command parser' instead of 'Execute bash commands'\n"
+                    "  4. Contact security team if risk score seems incorrect"
+                )
+            # NOTE: Ruff TRY003/TRY301 - Long inline error messages intentionally kept
+            # for LLM/user guidance and security diagnostics. Rich error context is critical
+            # for debugging prompt injection detection failures.
+        except PromptInjectionError:
+            # Re-raise our own validation errors
+            raise
+        except Exception as e:
+            # SECURITY TRADE-OFF: Fail-open strategy
+            #
+            # We intentionally allow validation to proceed if LLM Guard scanner fails.
+            # This prioritizes availability over security in edge cases (model load failures,
+            # CUDA errors, out-of-memory, etc.).
+            #
+            # RISK: Malicious input can bypass injection detection during scanner outages.
+            #
+            # MITIGATION:
+            # 1. Monitor scanner failure rate (logs/metrics below)
+            # 2. Alert on sustained scanner failures (>1% failure rate)
+            # 3. Consider fail-closed (raise exception) in production after proving reliability
+            # 4. Audit logs retain task descriptions for post-incident analysis
+            #
+            # This decision favors uninterrupted agent operations while accepting temporary
+            # security degradation. Review this trade-off based on your threat model.
+
+            # Scanner failure - fail open with logging
+
+            # Log scanner failure for monitoring/alerting
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "LLM Guard injection scanner failed - validation proceeding without check",
+                extra={
+                    'error': str(e),
+                    'error_type': type(e).__name__,
+                    'task_description_hash': hashlib.sha256(v.encode()).hexdigest(),
+                    'fail_open': True,
+                    'security_layer': 'injection_detection'
+                }
+            )
+
+            # Log scanner failure but don't block (fail-open for availability)
+            import warnings
+            warnings.warn(
+                f"LLM Guard scanner failed: {e}. Skipping injection check.",
+                stacklevel=2  # Point to caller, not this line
+            )
+
         return v
 
     @field_validator('file_paths')
@@ -335,6 +528,89 @@ class AgentHandoff(BaseModel):
     # --- MODEL VALIDATORS ---
 
     @model_validator(mode='after')
+    def validate_capability_constraints(self):
+        """
+        Enforce agent capability boundaries (privilege escalation prevention).
+
+        CRITICAL: This validator runs AFTER field validation completes (mode='after').
+        Field validators run first, then model validators enforce cross-field constraints.
+
+        Validates that spawning agent has permission to spawn target agent.
+        Prevents attacks where compromised/malicious agent attempts to
+        spawn higher-privileged agents.
+
+        Capability matrix (spawner → allowed targets):
+        - planning: ['*'] (universal capability - can spawn any agent)
+        - qa: ['test-writer', 'test-auditor'] (only test-related agents)
+        - test-writer: [] (no spawning capability)
+        - test-auditor: [] (no spawning capability)
+        - frontend: ['frontend', 'test-writer'] (can spawn self + tests)
+        - backend: ['backend', 'test-writer', 'devops'] (can spawn self + tests + infra)
+        - devops: ['devops', 'test-writer'] (can spawn self + tests)
+        - research: [] (no spawning capability - information gathering only)
+        - tracking: [] (no spawning capability - git/linear operations only)
+        - browser: [] (no spawning capability - GUI automation only)
+
+        Environment: Set IW_SPAWNING_AGENT to indicate which agent is delegating.
+
+        Returns:
+            Self: Validated model instance
+
+        Raises:
+            ValueError: If spawning agent lacks capability to spawn target agent
+        """
+        spawning_agent = os.getenv('IW_SPAWNING_AGENT')
+        target_agent = self.agent_name
+
+        # Get allowed targets for spawning agent (from module constant)
+        allowed_targets = _CAPABILITY_MATRIX.get(spawning_agent, [])
+
+        # Validate spawning_agent is recognized (catch typos/misconfigurations)
+        if spawning_agent not in _CAPABILITY_MATRIX:
+            raise ValueError(
+                f"Unknown spawning agent: '{spawning_agent}'.\n\n"
+                f"Valid spawning agents: {', '.join(_CAPABILITY_MATRIX.keys())}\n\n"
+                "This indicates:\n"
+                "  1. Typo in spawning_agent parameter\n"
+                "  2. New agent not added to _CAPABILITY_MATRIX\n"
+                "  3. IW_SPAWNING_AGENT environment variable incorrectly set"
+            )
+
+        # Check if target is allowed
+        # '*' = universal capability (planning agent)
+        if '*' not in allowed_targets and target_agent not in allowed_targets:
+            # Format allowed list for error message
+            if not allowed_targets:
+                allowed_str = "none (no spawning capability)"
+            else:
+                allowed_str = ', '.join(f"'{a}'" for a in allowed_targets)
+
+            raise ValueError(
+                f"Capability violation: '{spawning_agent}' cannot spawn '{target_agent}'.\n\n"
+                f"Allowed targets for '{spawning_agent}': {allowed_str}\n\n"
+                "Security: Prevents privilege escalation via agent spawning.\n\n"
+                "This error indicates:\n"
+                "  1. Wrong agent is attempting delegation (should be Planning Agent)\n"
+                "  2. IW_SPAWNING_AGENT environment variable incorrectly set\n"
+                "  3. Attack attempt (malicious agent trying to spawn privileged agent)\n\n"
+                "If this is legitimate:\n"
+                "  - Delegate through Planning Agent instead\n"
+                "  - Update _CAPABILITY_MATRIX in handoff_models.py if new workflow requires it\n"
+                "  - Contact security team for capability matrix changes"
+            )
+
+        # TODO(future): Add spawn graph depth limits
+        # Prevent spawn chains (A spawns B spawns C spawns D...) from exceeding
+        # depth limit (e.g., max 3 levels deep). This prevents:
+        # - Infinite spawn loops (A → B → C → A)
+        # - Resource exhaustion via deep spawn trees
+        # - Attack vectors using spawn chain obfuscation
+        # Implementation: Track spawn ancestry via IW_SPAWN_DEPTH env var,
+        # reject if depth > IW_MAX_SPAWN_DEPTH (default: 3)
+
+        return self
+
+    @model_validator(mode='after')
     def validate_consistency(self):
         """
         Validate cross-field consistency.
@@ -434,18 +710,41 @@ class AgentHandoff(BaseModel):
 
 # --- VALIDATION FUNCTIONS ---
 
-def validate_handoff(data: dict) -> AgentHandoff:
+def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
     """
     Validate handoff data and return AgentHandoff model.
 
     Args:
         data: Dictionary with handoff fields
+        spawning_agent: Agent making the delegation (for capability validation)
 
     Returns:
         AgentHandoff: Validated handoff model
 
     Raises:
         ValidationError: If validation fails with detailed error messages
+
+    THREADING CONSIDERATION (Future Enhancement):
+        Current implementation uses os.environ for spawning_agent context (NOT thread-safe).
+        os.environ is process-global state - concurrent validations can race.
+
+        For multi-threaded validation, use threading.local() instead:
+
+        import threading
+        _context = threading.local()
+
+        def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
+            _context.spawning_agent = spawning_agent
+            try:
+                return AgentHandoff(**data)
+            finally:
+                if hasattr(_context, 'spawning_agent'):
+                    delattr(_context, 'spawning_agent')
+
+        Then in validate_capability_constraints:
+            spawning_agent = getattr(_context, 'spawning_agent', None)
+
+        This provides thread-safe isolation without changing validator signature.
 
     Example:
         >>> handoff = validate_handoff({
@@ -457,9 +756,18 @@ def validate_handoff(data: dict) -> AgentHandoff:
         ...         "[ ] Form submits to /api/auth/login",
         ...         "[ ] Error messages display on failure"
         ...     ]
-        ... })
+        ... }, spawning_agent='planning')
     """
-    return AgentHandoff(**data)
+    # Set spawning agent in environment for validator to access
+    # NOTE: NOT thread-safe for concurrent validations from multiple threads.
+    # os.environ is process-global state - concurrent validations can race.
+    # For multi-threaded use, implement thread-local storage or pass via context.
+    os.environ['IW_SPAWNING_AGENT'] = spawning_agent
+    try:
+        return AgentHandoff(**data)
+    finally:
+        # Clean up to prevent leakage to other validations
+        os.environ.pop('IW_SPAWNING_AGENT', None)
 
 
 def get_available_agents() -> dict[str, str]:
@@ -508,7 +816,7 @@ if __name__ == "__main__":
     }
 
     try:
-        handoff = validate_handoff(valid_handoff)
+        handoff = validate_handoff(valid_handoff, spawning_agent='planning')
         print("✅ Valid handoff:")
         print(f"  Agent: {handoff.agent_name}")
         print(f"  Task: {handoff.task_description[:50]}...")
@@ -528,7 +836,7 @@ if __name__ == "__main__":
     }
 
     try:
-        validate_handoff(invalid_handoff)
+        validate_handoff(invalid_handoff, spawning_agent='planning')
         print("✅ Validation passed (unexpected!)")
     except Exception as e:
         print("❌ Expected validation failure:")
@@ -566,7 +874,7 @@ if __name__ == "__main__":
     }
 
     try:
-        handoff = validate_handoff(backend_handoff)
+        handoff = validate_handoff(backend_handoff, spawning_agent='planning')
         print("✅ Valid handoff:")
         print(f"  Agent: {handoff.agent_name}")
         print(f"  Task: {handoff.task_description[:60]}...")
@@ -587,7 +895,7 @@ if __name__ == "__main__":
     }
 
     try:
-        validate_handoff(invalid_research)
+        validate_handoff(invalid_research, spawning_agent='planning')
         print("✅ Validation passed (unexpected!)")
     except Exception as e:
         print("❌ Expected validation failure:")
