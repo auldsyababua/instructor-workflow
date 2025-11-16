@@ -54,11 +54,30 @@ _AVAILABLE_AGENTS = {
     'browser': 'GUI operations, browser automation'
 }
 
-# Initialize LLM Guard prompt injection scanner (module-level for reuse)
-# Threshold 0.7 = block if confidence > 70% that input is malicious
-# Lower threshold = more sensitive (catches more attacks, may increase false positives)
-# Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
-_INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
+# LLM Guard scanner (initialized lazily on first use)
+_INJECTION_SCANNER = None
+
+
+def _get_injection_scanner():
+    """
+    Get or initialize the prompt injection scanner (lazy singleton).
+
+    Initializes scanner on first use to prevent module import failures
+    if LLM Guard models aren't available or environment issues occur.
+
+    Returns:
+        PromptInjection: Configured scanner instance
+
+    Raises:
+        Exception: If scanner initialization fails (propagated to caller)
+    """
+    global _INJECTION_SCANNER
+    if _INJECTION_SCANNER is None:
+        # Threshold 0.7 = block if confidence > 70% that input is malicious
+        # Lower threshold = more sensitive (catches more attacks, may increase false positives)
+        # Higher threshold = less sensitive (fewer false positives, may miss sophisticated attacks)
+        _INJECTION_SCANNER = PromptInjection(threshold=0.7, use_onnx=False)
+    return _INJECTION_SCANNER
 
 
 class AgentHandoff(BaseModel):
@@ -251,7 +270,7 @@ class AgentHandoff(BaseModel):
             # - sanitized_output: Cleaned text (we don't use this)
             # - is_valid: False if risk_score > threshold (0.7)
             # - risk_score: 0.0-1.0 confidence that input is malicious
-            _sanitized_output, is_valid, risk_score = _INJECTION_SCANNER.scan(
+            _sanitized_output, is_valid, risk_score = _get_injection_scanner().scan(
                 prompt=v  # Scan the task description
             )
 
@@ -470,7 +489,7 @@ class AgentHandoff(BaseModel):
             # Planning Agent: Universal capability (trusted coordinator)
             'planning': ['*'],
 
-            # QA Agent: Can spawn test-related agents only
+            # Test Writer Agent or Test Auditor Agent: Can spawn test-related agents only
             'qa': ['test-writer', 'test-auditor'],
 
             # Implementation agents: Can spawn self + tests + related infra
@@ -643,6 +662,27 @@ def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
 
     Raises:
         ValidationError: If validation fails with detailed error messages
+
+    THREADING CONSIDERATION (Future Enhancement):
+        Current implementation uses os.environ for spawning_agent context (NOT thread-safe).
+        os.environ is process-global state - concurrent validations can race.
+
+        For multi-threaded validation, use threading.local() instead:
+
+        import threading
+        _context = threading.local()
+
+        def validate_handoff(data: dict, spawning_agent: str) -> AgentHandoff:
+            _context.spawning_agent = spawning_agent
+            try:
+                return AgentHandoff(**data)
+            finally:
+                delattr(_context, 'spawning_agent', None)
+
+        Then in validate_capability_constraints:
+            spawning_agent = getattr(_context, 'spawning_agent', None)
+
+        This provides thread-safe isolation without changing validator signature.
 
     Example:
         >>> handoff = validate_handoff({
