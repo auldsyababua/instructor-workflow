@@ -19,13 +19,22 @@
 
 set -euo pipefail
 
+# Create temporary file for pytest output (CI-safe, no race conditions)
+TMPFILE=$(mktemp) || { echo "Failed to create temp file"; exit 1; }
+trap "rm -f '$TMPFILE'" EXIT
+
 # Run tests and capture output
 echo "Running injection validator tests..."
-pytest scripts/test_injection_validators.py -v > /tmp/pytest_output.txt 2>&1 || true
+pytest scripts/test_injection_validators.py -v > "$TMPFILE" 2>&1 || true
 
 # Count xfail and xpass
-XFAIL_COUNT=$(grep -c "XFAIL" /tmp/pytest_output.txt || echo "0")
-XPASS_COUNT=$(grep -c "XPASS" /tmp/pytest_output.txt || echo "0")
+# Note: grep -c returns "0" with exit code 1 when no matches found
+# We use || true to accept exit code 1, then default to 0 if empty
+XFAIL_COUNT=$(grep -c "XFAIL" "$TMPFILE" 2>/dev/null || true)
+XPASS_COUNT=$(grep -c "XPASS" "$TMPFILE" 2>/dev/null || true)
+# Default to 0 if grep failed entirely (file missing/unreadable)
+XFAIL_COUNT=${XFAIL_COUNT:-0}
+XPASS_COUNT=${XPASS_COUNT:-0}
 
 echo ""
 echo "=== xfail Test Summary ==="
@@ -50,7 +59,7 @@ if [ "$XPASS_COUNT" -gt 0 ]; then
 
     # Extract which tests passed unexpectedly
     echo "Tests that unexpectedly passed:"
-    grep "XPASS" /tmp/pytest_output.txt || true
+    grep "XPASS" "$TMPFILE" || true
     echo ""
 fi
 
