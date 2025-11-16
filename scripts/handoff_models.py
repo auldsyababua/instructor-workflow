@@ -398,8 +398,8 @@ class AgentHandoff(BaseModel):
         """
         Enforce agent capability boundaries (privilege escalation prevention).
 
-        CRITICAL: This validator runs FIRST (before field validation) to ensure
-        capability violations are not masked by other validation errors.
+        CRITICAL: This validator runs AFTER field validation completes (mode='after').
+        Field validators run first, then model validators enforce cross-field constraints.
 
         Validates that spawning agent has permission to spawn target agent.
         Prevents attacks where compromised/malicious agent attempts to
@@ -425,7 +425,7 @@ class AgentHandoff(BaseModel):
         Raises:
             ValueError: If spawning agent lacks capability to spawn target agent
         """
-        spawning_agent = os.getenv('IW_SPAWNING_AGENT', 'unknown')
+        spawning_agent = os.getenv('IW_SPAWNING_AGENT')
         target_agent = self.agent_name
 
         # Capability matrix (spawner → allowed targets)
@@ -621,8 +621,9 @@ def validate_handoff(data: dict, spawning_agent: str = 'unknown') -> AgentHandof
         ... }, spawning_agent='planning')
     """
     # Set spawning agent in environment for validator to access
-    # This is thread-safe because we set it immediately before validation
-    # and the validation is synchronous (no await points where thread could switch)
+    # NOTE: NOT thread-safe for concurrent validations from multiple threads.
+    # os.environ is process-global state - concurrent validations can race.
+    # For multi-threaded use, implement thread-local storage or pass via context.
     os.environ['IW_SPAWNING_AGENT'] = spawning_agent
     try:
         return AgentHandoff(**data)

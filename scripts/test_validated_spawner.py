@@ -676,7 +676,7 @@ class TestEdgeCases:
         assert len(spawner.spawned_agents) == 2
 
     def test_environment_variable_isolation(self, spawner):
-        """Test IW_SPAWNING_AGENT environment variable set correctly."""
+        """Test IW_SPAWNING_AGENT environment variable cleanup."""
         original_env = os.environ.get('IW_SPAWNING_AGENT')
 
         spawner.spawn_with_validation(
@@ -686,14 +686,15 @@ class TestEdgeCases:
             spawning_agent='custom-agent'
         )
 
-        # During validation, env var should be set
-        # (tested indirectly via capability validation)
-        # After spawn, env var should still be set (not cleaned up)
-        assert os.environ.get('IW_SPAWNING_AGENT') == 'custom-agent'
+        # During validation, env var is set temporarily for capability validation
+        # After spawn completes, env var should be cleaned up to prevent leakage
+        assert os.environ.get('IW_SPAWNING_AGENT') is None  # Verify cleanup
 
-        # Cleanup: restore original
-        if original_env:
+        # Cleanup: restore original state
+        if original_env is not None:
             os.environ['IW_SPAWNING_AGENT'] = original_env
+        else:
+            os.environ.pop('IW_SPAWNING_AGENT', None)  # Delete if wasn't set originally
 
 
 if __name__ == "__main__":

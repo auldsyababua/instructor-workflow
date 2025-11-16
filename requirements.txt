@@ -6,7 +6,7 @@ anthropic>=0.21.0
 llm-guard>=0.3.0
 
 # Observability integration
-requests>=2.31.0
+requests>=2.32.4  # CVE-2024-35195, CVE-2024-47081 fixed
 
 # Testing dependencies
 pytest>=7.0.0
