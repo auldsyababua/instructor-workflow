@@ -31,6 +31,8 @@ from pydantic import BaseModel, Field, field_validator, model_validator
 from typing import Optional
 from pathlib import Path
 import re
+import logging
+import hashlib
 
 # LLM Guard for semantic prompt injection detection
 from llm_guard.input_scanners import PromptInjection
@@ -272,14 +274,48 @@ class AgentHandoff(BaseModel):
                     "  4. Contact security team if risk score seems incorrect"
                 )
         except Exception as e:
+            # SECURITY TRADE-OFF: Fail-open strategy
+            #
+            # We intentionally allow validation to proceed if LLM Guard scanner fails.
+            # This prioritizes availability over security in edge cases (model load failures,
+            # CUDA errors, out-of-memory, etc.).
+            #
+            # RISK: Malicious input can bypass injection detection during scanner outages.
+            #
+            # MITIGATION:
+            # 1. Monitor scanner failure rate (logs/metrics below)
+            # 2. Alert on sustained scanner failures (>1% failure rate)
+            # 3. Consider fail-closed (raise exception) in production after proving reliability
+            # 4. Audit logs retain task descriptions for post-incident analysis
+            #
+            # This decision favors uninterrupted agent operations while accepting temporary
+            # security degradation. Review this trade-off based on your threat model.
+
             # If LLM Guard fails (model not loaded, etc.), fall back to basic validation
             # Don't block legitimate traffic due to scanner failures
             if "prompt injection" in str(e).lower():
                 # Re-raise validation errors from our own ValueError above
                 raise
+
+            # Log scanner failure for monitoring/alerting
+            logger = logging.getLogger(__name__)
+            logger.warning(
+                "LLM Guard injection scanner failed - validation proceeding without check",
+                extra={
+                    'error': str(e),
+                    'error_type': type(e).__name__,
+                    'task_description_hash': hashlib.sha256(v.encode()).hexdigest(),
+                    'fail_open': True,
+                    'security_layer': 'injection_detection'
+                }
+            )
+
             # Log scanner failure but don't block (fail-open for availability)
             import warnings
-            warnings.warn(f"LLM Guard scanner failed: {e}. Skipping injection check.")
+            warnings.warn(
+                f"LLM Guard scanner failed: {e}. Skipping injection check.",
+                stacklevel=2  # Point to caller, not this line
+            )
 
         return v
 
