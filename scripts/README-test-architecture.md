@@ -129,7 +129,7 @@ Tests in `TestLayer3CommandInjection` and `TestLayer3EncodingAttacks` classes ha
 
 When you run pytest, you'll see:
 
-```
+```text
 ======================== 26 passed, 8 xfailed in 2.35s =========================
 ```
 
@@ -139,7 +139,7 @@ When you run pytest, you'll see:
 - **Exit code 0**: Suite passes (xfail doesn't fail CI)
 
 **If you see XPASS (unexpected pass)**:
-```
+```text
 ======================== 25 passed, 1 xpassed, 7 xfailed in 2.35s =========================
 ```
 
