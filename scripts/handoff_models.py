@@ -64,13 +64,17 @@ except ImportError:
             """No-op set."""
             pass
 
-        def labels(self, **kwargs):
+        def labels(self, **_kwargs):
             """No-op labels (return self for chaining)."""
             return self
 
-    # Stub constructors return no-op instances
-    Counter = lambda *args, **kwargs: _MetricStub()
-    Gauge = lambda *args, **kwargs: _MetricStub()
+    def _make_metric_stub(*args, **kwargs):
+        """Factory function returning no-op metric stub."""
+        return _MetricStub()
+
+    # Replace lambda assignments with factory function (Ruff-compliant)
+    Counter = _make_metric_stub
+    Gauge = _make_metric_stub
 
 # Prometheus metrics (no-op stubs if prometheus_client unavailable)
 llm_guard_scanner_failures_total = Counter(

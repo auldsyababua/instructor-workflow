@@ -23,8 +23,8 @@
         },
         "targets": [
           {
-            "expr": "rate(llm_guard_scanner_failures_total[1h])",
-            "legendFormat": "Failures/sec",
+            "expr": "sum(rate(llm_guard_scanner_failures_total[1h]))",
+            "legendFormat": "Failures/sec (all instances)",
             "refId": "A",
             "datasource": {
               "type": "prometheus",
@@ -135,8 +135,8 @@
         },
         "targets": [
           {
-            "expr": "increase(llm_guard_scanner_failures_total[1h])",
-            "legendFormat": "Total failures",
+            "expr": "sum(increase(llm_guard_scanner_failures_total[1h]))",
+            "legendFormat": "Total failures (all instances)",
             "refId": "A",
             "datasource": {
               "type": "prometheus",

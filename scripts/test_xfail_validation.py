@@ -24,11 +24,15 @@ import subprocess
 from pathlib import Path
 
 
+# Compute project root from this file's location (portable across environments)
+PROJECT_ROOT = Path(__file__).parent.parent
+
+
 # --- HELPER FUNCTIONS ---
 
 def parse_test_file():
     """Parse test_injection_validators.py and return AST."""
-    test_file = Path("/srv/projects/instructor-workflow/scripts/test_injection_validators.py")
+    test_file = PROJECT_ROOT / "scripts" / "test_injection_validators.py"
 
     try:
         with open(test_file, 'r') as f:
@@ -132,11 +136,21 @@ def get_xfail_parameters(method_node):
 
 
 def run_pytest_and_capture_output():
-    """Run pytest and capture output with timeout and error handling."""
+    """
+    Run pytest and capture output with timeout and error handling.
+
+    NOTE: Parsing pytest stdout is brittle. If this breaks in future pytest versions,
+    consider using pytest Python API instead:
+
+        import pytest
+        exit_code = pytest.main(['scripts/test_injection_validators.py', '-v'])
+
+    Current approach chosen for simplicity and minimal dependencies.
+    """
     try:
         result = subprocess.run(
-            ['pytest', 'scripts/test_injection_validators.py', '-v'],
-            cwd='/srv/projects/instructor-workflow',
+            ['python', '-m', 'pytest', 'scripts/test_injection_validators.py', '-v'],
+            cwd=PROJECT_ROOT,  # Use computed path, not hard-coded
             capture_output=True,
             text=True,
             timeout=60  # CRITICAL: Add timeout to prevent hanging
@@ -517,7 +531,7 @@ class TestDocumentationExists:
 
     def test_adr_005_exists(self):
         """ADR-005 architectural decision record must exist."""
-        adr_path = Path("/srv/projects/instructor-workflow/docs/architecture/adr/005-layer2-layer3-separation.md")
+        adr_path = PROJECT_ROOT / "docs/architecture/adr/005-layer2-layer3-separation.md"
 
         assert adr_path.exists(), (
             f"ADR-005 not found at {adr_path}. "
@@ -543,7 +557,7 @@ class TestDocumentationExists:
 
     def test_test_readme_exists(self):
         """Test architecture README must exist."""
-        readme_path = Path("/srv/projects/instructor-workflow/scripts/README-test-architecture.md")
+        readme_path = PROJECT_ROOT / "scripts/README-test-architecture.md"
 
         assert readme_path.exists(), (
             f"Test README not found at {readme_path}. "
@@ -569,7 +583,7 @@ class TestDocumentationExists:
 
     def test_monitor_xpass_script_exists(self):
         """XPASS monitoring script must exist."""
-        script_path = Path("/srv/projects/instructor-workflow/scripts/monitor_xpass.sh")
+        script_path = PROJECT_ROOT / "scripts/monitor_xpass.sh"
 
         assert script_path.exists(), (
             f"XPASS monitoring script not found at {script_path}. "
@@ -593,7 +607,7 @@ class TestDocumentationExists:
 
     def test_handoff_models_has_layer_separation_comments(self):
         """handoff_models.py must have Layer 2/3 comments."""
-        handoff_models_path = Path("/srv/projects/instructor-workflow/scripts/handoff_models.py")
+        handoff_models_path = PROJECT_ROOT / "scripts/handoff_models.py"
 
         assert handoff_models_path.exists(), (
             f"handoff_models.py not found at {handoff_models_path}"
@@ -615,7 +629,7 @@ class TestDocumentationExists:
 
     def test_project_context_references_adr(self):
         """Project context file must reference ADR-005."""
-        context_path = Path("/srv/projects/instructor-workflow/.project-context.md")
+        context_path = PROJECT_ROOT / ".project-context.md"
 
         assert context_path.exists(), (
             f"Project context file not found at {context_path}"
@@ -705,8 +719,8 @@ class TestEndToEndValidation:
     def test_pytest_exit_code_is_zero(self):
         """Pytest should exit with code 0 (xfail doesn't fail the suite)."""
         result = subprocess.run(
-            ['pytest', 'scripts/test_injection_validators.py', '-v'],
-            cwd='/srv/projects/instructor-workflow',
+            ['python', '-m', 'pytest', 'scripts/test_injection_validators.py', '-v'],
+            cwd=PROJECT_ROOT,
             capture_output=True
         )
 

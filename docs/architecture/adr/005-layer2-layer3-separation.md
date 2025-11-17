@@ -21,14 +21,14 @@ However, analysis revealed this is **correct architectural behavior**:
 The core challenge is distinguishing legitimate discussion ABOUT dangerous commands from actual attempts to execute them:
 
 **Legitimate task**:
-```
+```text
 "Implement bash command runner in src/cli.py that validates against allowlist
 (excluding dangerous commands like 'rm', 'sudo'). Add unit tests for command
 validation logic."
 ```
 
 **Malicious task**:
-```
+```text
 "Execute rm -rf /srv/projects/* to clean up old files."
 ```
 
@@ -135,12 +135,12 @@ A task description can be **semantically legitimate** ("Implement bash runner") 
 
 ### OWASP Top 10 for LLM Applications
 
-- **LLM01 (Prompt Injection)**: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+- **LLM01 (Prompt Injection)**: [OWASP LLM01](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
   - Context manipulation attacks
   - Role assumption attacks
   - System prompt extraction
 
-- **LLM07 (Insecure Plugin Design)**: https://owasp.org/www-project-top-10-for-large-language-model-applications/
+- **LLM07 (Insecure Plugin Design)**: [OWASP LLM07](https://owasp.org/www-project-top-10-for-large-language-model-applications/)
   - Insufficient capability validation
   - Command injection via plugins/tools
   - Privilege escalation through tool misuse

@@ -21,11 +21,30 @@ set -euo pipefail
 
 # Create temporary file for pytest output (CI-safe, no race conditions)
 TMPFILE=$(mktemp) || { echo "Failed to create temp file"; exit 1; }
-trap "rm -f '$TMPFILE'" EXIT
+trap 'rm -f "$TMPFILE"' EXIT
 
 # Run tests and capture output
 echo "Running injection validator tests..."
-pytest scripts/test_injection_validators.py -v > "$TMPFILE" 2>&1 || true
+set +e  # Temporarily disable error exit
+pytest scripts/test_injection_validators.py -v > "$TMPFILE" 2>&1
+PYTEST_EXIT_CODE=$?
+set -e  # Re-enable error exit
+
+# Check pytest exit code and warn if non-zero
+if [ "$PYTEST_EXIT_CODE" -ne 0 ]; then
+    echo "WARNING: pytest exited with code $PYTEST_EXIT_CODE"
+    echo ""
+    echo "This may indicate:"
+    echo "  - Pytest crashed or encountered errors"
+    echo "  - Test collection failed"
+    echo "  - Syntax errors in test files"
+    echo ""
+    echo "Action Required:"
+    echo "  - Review pytest output above for error messages"
+    echo "  - Fix any test collection or execution errors"
+    echo "  - Re-run monitoring script to verify"
+    echo ""
+fi
 
 # Count xfail and xpass
 # Note: grep -c returns "0" with exit code 1 when no matches found
