@@ -167,9 +167,10 @@ A task description can be **semantically legitimate** ("Implement bash runner") 
 
 ### Implementation Files
 
-- **Validation Logic**: `scripts/handoff_models.py` line 77-113
-  - LLM Guard PromptInjection scanner integration
-  - Comments explaining Layer 2/3 boundary
+- **Validation Logic**: `scripts/handoff_models.py`
+  - Function: `_get_injection_scanner()` - LLM Guard PromptInjection scanner initialization
+  - Function: `validate_task_description()` field validator - Layer 2 semantic validation
+  - Comments: Look for "Layer 2/3" markers explaining architectural boundary
 
 - **Test Suite**: `scripts/test_injection_validators.py`
   - `TestLayer2PromptInjection` - Tests Layer 2 SHOULD catch

@@ -401,9 +401,9 @@ pytest scripts/test_injection_validators.py -v
 ### Implementation Files
 
 - **Handoff Models**: `scripts/handoff_models.py`
-  - Field validator: `validate_task_description` (line 278-309)
-  - LLM Guard scanner: `_get_injection_scanner()` (line 128-151)
-  - Layer 2/3 comments: line 77-84
+  - Field validator: `validate_task_description()` - Layer 2 semantic validation
+  - LLM Guard scanner: `_get_injection_scanner()` - Scanner initialization with threshold=0.7
+  - Layer 2/3 comments: Search for "Layer 2/3" markers in validation code
 
 ---
 

@@ -68,8 +68,16 @@ except ImportError:
             """No-op labels (return self for chaining)."""
             return self
 
-    def _make_metric_stub(*args, **kwargs):
-        """Factory function returning no-op metric stub."""
+    def _make_metric_stub(*_args, **_kwargs):
+        """Factory function returning no-op metric stub.
+
+        Args:
+            *_args: Unused positional args (API compatibility with Counter/Gauge)
+            **_kwargs: Unused keyword args (API compatibility with Counter/Gauge)
+
+        Returns:
+            _MetricStub: No-op metric stub for graceful degradation
+        """
         return _MetricStub()
 
     # Replace lambda assignments with factory function (Ruff-compliant)
@@ -414,12 +422,13 @@ class AgentHandoff(BaseModel):
                     f"Potential prompt injection detected (OWASP LLM01).\n\n"
                     f"Risk score: {risk_score:.3f} (threshold: 0.7)\n"
                     f"Confidence: {risk_score * 100:.1f}% likely malicious\n\n"
-                    "Security: Task description blocked to prevent context injection.\n\n"
-                    "This ML model detected semantic patterns indicating:\n"
+                    "Security: Task description blocked to prevent context manipulation.\n\n"
+                    "Layer 2 detected semantic patterns indicating:\n"
                     "  - Attempts to override agent instructions\n"
-                    "  - Role manipulation attacks\n"
-                    "  - Command injection patterns\n"
-                    "  - Encoding-based obfuscation\n\n"
+                    "  - Role manipulation attacks (privilege escalation via prompt)\n"
+                    "  - System prompt extraction attempts\n\n"
+                    "Note: Command injection and encoding attacks are validated at Layer 3.\n"
+                    "See: docs/architecture/adr/005-layer2-layer3-separation.md\n\n"
                     "If this is legitimate:\n"
                     "  1. Rephrase task description more clearly\n"
                     "  2. Avoid language that resembles attack patterns\n"
