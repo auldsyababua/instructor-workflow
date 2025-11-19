@@ -140,7 +140,7 @@ When you run pytest, you'll see:
 
 **Current Reality - 2 XPASS Tests (Architectural Drift Alert)**:
 ```text
-============== 1 failed, 25 passed, 7 xfailed, 2 xpassed in 2-4s ==============
+============== 1 failed, 25 passed, 8 xfailed, 2 xpassed in 2-4s ==============
 ```
 
 **XPASS Breakdown**:
@@ -282,7 +282,7 @@ Developer sees 8 "failing" tests, assumes they're bugs, removes xfail markers to
 PYTHONPATH=. pytest scripts/test_injection_validators.py -v
 
 # Expected output:
-# ============== 1 failed, 25 passed, 7 xfailed, 2 xpassed in 2-4s ==============
+# ============== 1 failed, 25 passed, 8 xfailed, 2 xpassed in 2-4s ==============
 ```
 
 ### Layer-Specific Tests
@@ -382,7 +382,13 @@ PYTHONPATH=. pytest scripts/test_injection_validators.py -v
 | `TestLayer3EncodingAttacks` | Encoding obfuscation attacks Layer 2 should NOT catch | All tests **XFAIL** | 4 |
 | `TestTypoglycemiaPatterns` | Future feature (fuzzy matching) | All tests **XFAIL** (not implemented) | 2 |
 
-**Total**: 36 tests (25 passed, 7 xfailed for Layer 3 boundary, 2 xfailed for future feature, 2 xpassed for architectural drift, 1 failed edge case)
+**Total**: 36 tests (25 passed + 8 xfailed + 2 xpassed + 1 failed)
+
+**Breakdown by status**:
+- **25 passed**: Layer 2 prompt injection, benign prompts, edge cases (3 of 4), capability constraints
+- **8 xfailed**: 3 Layer 3 command injection (1 xpassed), 3 Layer 3 encoding attacks (1 xpassed), 1 Typoglycemia (1 xpassed)
+- **2 xpassed**: test_base64_decode_attack, test_ignor3_pr3vious_instructi0ns (model improvements)
+- **1 failed**: test_empty_task_description (assertion needs fix - says "too short" not "empty")
 
 ### File Locations
 
