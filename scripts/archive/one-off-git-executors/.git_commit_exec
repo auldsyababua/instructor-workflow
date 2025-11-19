@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+exec git add scripts/monitor_xpass.sh scripts/handoff_models.py scripts/test_xfail_validation.py observability/grafana-dashboards/llm-guard-scanner-health.json docs/architecture/adr/005-layer2-layer3-separation.md scripts/README-test-architecture.md scripts/test_scanner_observability.py && git commit -m "refactor: address PR #5 CodeRabbit nitpick comments
+
+- Fix monitor_xpass.sh exit code capture (CRITICAL - prevents hiding pytest failures)
+- Add markdownlint compliance to ADR-005 and test README
+- Refactor Prometheus stubs for Ruff compliance
+- Improve test portability (computed PROJECT_ROOT, subprocess helper)
+- Add Grafana aggregate views for multi-instance
+- Fix ShellCheck SC2064 trap quoting
+- Enhance test quality (pytest.skip, assertions, labeled counter validation)
+
+Implements 9 of 10 approved nitpicks from CodeRabbit PR #5 review.
+Deferred nitpick #9 (thread-local context) to future concurrency PR per research agent recommendation.
+
+Generated with [Claude Code](https://claude.com/claude-code)
+
+Co-Authored-By: Claude <noreply@anthropic.com>"
