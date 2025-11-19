@@ -259,24 +259,24 @@ Developer sees 8 "failing" tests, assumes they're bugs, removes xfail markers to
 ### Full Test Suite
 
 ```bash
-# Run all injection validator tests
-pytest scripts/test_injection_validators.py -v
+# Run all injection validator tests (requires PYTHONPATH)
+PYTHONPATH=/srv/projects/instructor-workflow pytest scripts/test_injection_validators.py -v
 
 # Expected output:
-# ======================== 26 passed, 8 xfailed in 2.35s =========================
+# ======================== 25 passed, 8 xfailed, 2 xpassed in 2-4s =========================
 ```
 
 ### Layer-Specific Tests
 
 ```bash
 # Run only Layer 2 prompt injection tests (should all PASS)
-pytest scripts/test_injection_validators.py::TestLayer2PromptInjection -v
+PYTHONPATH=/srv/projects/instructor-workflow pytest scripts/test_injection_validators.py::TestLayer2PromptInjection -v
 
 # Run only Layer 3 command injection tests (should all XFAIL)
-pytest scripts/test_injection_validators.py::TestLayer3CommandInjection -v
+PYTHONPATH=/srv/projects/instructor-workflow pytest scripts/test_injection_validators.py::TestLayer3CommandInjection -v
 
 # Run only Layer 3 encoding attack tests (should all XFAIL)
-pytest scripts/test_injection_validators.py::TestLayer3EncodingAttacks -v
+PYTHONPATH=/srv/projects/instructor-workflow pytest scripts/test_injection_validators.py::TestLayer3EncodingAttacks -v
 ```
 
 ### Monitor XPASS (Unexpected Pass)
@@ -296,7 +296,7 @@ pytest scripts/test_injection_validators.py::TestLayer3EncodingAttacks -v
 
 ```bash
 # Verbose output shows xfail reason strings
-pytest scripts/test_injection_validators.py -v
+PYTHONPATH=/srv/projects/instructor-workflow pytest scripts/test_injection_validators.py -v
 
 # Look for "ARCHITECTURAL BOUNDARY" in output
 ```
@@ -353,17 +353,17 @@ pytest scripts/test_injection_validators.py -v
 
 | Class | Purpose | Expected Behavior | Count |
 |-------|---------|-------------------|-------|
-| `TestLayer2PromptInjection` | OWASP LLM01 semantic attacks Layer 2 SHOULD catch | All tests **PASS** | 9 |
 | `TestRoleManipulationPatterns` | Role assumption attacks Layer 2 SHOULD catch | All tests **PASS** | 3 |
 | `TestSystemOverridePatterns` | System mode override attacks Layer 2 SHOULD catch | All tests **PASS** | 3 |
-| `TestLayer3CommandInjection` | OWASP LLM07 command injection Layer 2 should NOT catch | All tests **XFAIL** | 4 |
-| `TestLayer3EncodingAttacks` | Encoding obfuscation attacks Layer 2 should NOT catch | All tests **XFAIL** | 4 |
 | `TestBenignPrompts` | Legitimate tasks (no false positives) | All tests **PASS** | 5 |
 | `TestEdgeCases` | Edge cases (empty, long, unicode, mixed case) | All tests **PASS** | 4 |
 | `TestCapabilityConstraints` | Privilege escalation prevention | All tests **PASS** | 5 |
+| `TestLayer2PromptInjection` | OWASP LLM01 semantic attacks (nested in other classes) | Integrated in above classes | - |
+| `TestLayer3CommandInjection` | OWASP LLM07 command injection Layer 2 should NOT catch | All tests **XFAIL** | 4 |
+| `TestLayer3EncodingAttacks` | Encoding obfuscation attacks Layer 2 should NOT catch | All tests **XFAIL** | 4 |
 | `TestTypoglycemiaPatterns` | Future feature (fuzzy matching) | All tests **XFAIL** (not implemented) | 2 |
 
-**Total**: ~39 tests (26 passed, 8 xfailed for Layer 3 boundary, 2 xfailed for future feature)
+**Total**: 36 tests (25 passed, 8 xfailed for Layer 3 boundary, 2 xfailed for future feature, 1 failed edge case)
 
 ### File Locations
 
