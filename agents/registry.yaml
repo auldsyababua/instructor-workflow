@@ -1,0 +1,533 @@
+# Agent Registry - Single Source of Truth
+# Maintained by: Research Agent (when creating new agents)
+# Consumed by: session-manager.sh, build-prompts.sh, Planning Agent context generation
+# Validation: scripts/validate-registry.sh (pre-commit hook)
+#
+# Schema Reference:
+#   Required: name, display_name, description, model, tools
+#   Optional: delegates_to, cannot_access, exclusive_access, responsibilities, forbidden
+#
+# See: docs/.scratch/research-system-audit/modular-prompting-architecture.md
+
+agents:
+  grafana-agent:
+    name: grafana-agent
+    display_name: "Grafana Agent"
+    description: "Deploy, configure, and manage Grafana monitoring dashboards with Prometheus integration, GPU monitoring, alerting, and infrastructure-as-code provisioning"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - WebFetch
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  action-agent:
+    name: action-agent
+    display_name: "Action Agent"
+    description: "Executes implementation work and coordinates multi-step operations"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  backend-agent:
+    name: backend-agent
+    display_name: "Backend Agent"
+    description: "Handles server-side implementation and API development"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  browser-agent:
+    name: browser-agent
+    display_name: "Browser Agent"
+    description: "Performs browser-based testing and interactions"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - mcp__chrome-devtools
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  cadvisor-agent:
+    name: cadvisor-agent
+    display_name: "Cadvisor Agent"
+    description: "cAdvisor container monitoring, resource metrics, Prometheus integration"
+    model: claude-sonnet-4-5-20250929
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  debug-agent:
+    name: debug-agent
+    display_name: "Debug Agent"
+    description: "Investigates and resolves bugs and issues"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  devops-agent:
+    name: devops-agent
+    display_name: "Devops Agent"
+    description: "Manages infrastructure and deployment operations"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  docker-agent:
+    name: docker-agent
+    display_name: "Docker Agent"
+    description: "Docker/Docker Compose operations, container management, resource monitoring, debugging, and infrastructure deployment"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - WebFetch
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  frappe-erpnext-agent:
+    name: frappe-erpnext-agent
+    display_name: "Frappe Erpnext Agent"
+    description: "Specialized agent for Frappe Cloud and ERPNext administration using Bench CLI"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - Task
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  frontend-agent:
+    name: frontend-agent
+    display_name: "Frontend Agent"
+    description: "Handles UI/UX implementation and client-side development"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  homelab-architect:
+    name: homelab-architect
+    display_name: "Homelab Architect"
+    description: "Expert homelab network architect for Colin's Mac + Workhorse AI workstation. Use PROACTIVELY for any network topology, architecture, troubleshooting, segmentation, routing, DNS/DHCP, VLAN design, firewall policy, or infrastructure planning tasks. Already knows Colin's complete infrastructure (22 services, P2P 10GbE, VLAN 10 homelab, RTX 5090 GPU compute). Specializes in transforming chaotic home labs into production-grade, observable, maintainable networks for single operators."
+    model: sonnet
+    tools:
+      - Write
+      - Read
+      - Glob
+      - Grep
+      - WebSearch
+      - WebFetch
+      - mcp__ref__*
+      - mcp__exasearch__*
+      - mcp__perplexity-ask__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  jupyter-agent:
+    name: jupyter-agent
+    display_name: "Jupyter Agent"
+    description: "Jupyter Lab/Notebook operations, kernel management, AI/ML workflows, GPU integration"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  onrate-agent:
+    name: onrate-agent
+    display_name: "Onrate Agent"
+    description: "Onrate network monitoring, cellular performance metrics, latency analysis, throughput optimization"
+    model: claude-sonnet-4-5-20250929
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  planning-agent:
+    name: planning-agent
+    display_name: "Planning Agent"
+    description: "Breaks down epics and creates implementation plans"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - NotebookEdit
+      - WebFetch
+      - WebSearch
+      - Task
+      - TodoWrite
+      - SlashCommand
+      - mcp__linear-server__*
+      - mcp__github__*
+      - mcp__supabase__*
+      - mcp__ref__*
+      - mcp__exasearch__*
+      - mcp__perplexity-ask__*
+      - mcp__claude-reviewer__*
+      - mcp__chrome-devtools__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  prometheus-agent:
+    name: prometheus-agent
+    display_name: "Prometheus Agent"
+    description: "Prometheus metrics collection, PromQL queries, alerting rules, TSDB management"
+    model: claude-sonnet-4-5-20250929
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  qa-agent:
+    name: qa-agent
+    display_name: "Qa Agent"
+    description: "Creates and maintains test suites and validates implementations"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  researcher-agent:
+    name: researcher-agent
+    display_name: "Researcher Agent"
+    description: "Gathers information and provides technical research"
+    model: sonnet
+    tools:
+      - Write
+      - Read
+      - Glob
+      - Grep
+      - WebSearch
+      - WebFetch
+      - mcp__ref__*
+      - mcp__exasearch__*
+      - mcp__perplexity-ask__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  seo-agent:
+    name: seo-agent
+    display_name: "Seo Agent"
+    description: "Optimizes content for search engines and web performance"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  software-architect:
+    name: software-architect
+    display_name: "Software Architect"
+    description: "Expert software architect planner. Use PROACTIVELY for all stack and architecture research and selection."
+    model: sonnet
+    tools:
+      - Write
+      - Read
+      - Glob
+      - Grep
+      - WebSearch
+      - WebFetch
+      - mcp__ref__*
+      - mcp__exasearch__*
+      - mcp__perplexity-ask__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  test-auditor-agent:
+    name: test-auditor-agent
+    display_name: "Test Auditor Agent"
+    description: "Audits existing tests for quality and catches happy-path bias"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Glob
+      - Grep
+      - Task
+      - TodoWrite
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  test-writer-agent:
+    name: test-writer-agent
+    display_name: "Test Writer Agent"
+    description: "Writes comprehensive tests before implementation (TDD Phase 3)"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - NotebookEdit
+      - Task
+      - TodoWrite
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  tracking-agent:
+    name: tracking-agent
+    display_name: "Tracking Agent"
+    description: "Manages project tracking and documentation"
+    model: haiku
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - mcp__linear-server
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  traefik-agent:
+    name: traefik-agent
+    display_name: "Traefik Agent"
+    description: "Manage Traefik v3 reverse proxy configuration, routing rules, middleware chains, and service discovery for Docker-based infrastructure"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  traycer-agent:
+    name: traycer-agent
+    display_name: "Traycer Agent"
+    description: "Coordinates agent workflows and manages project orchestration"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+      - mcp__linear-server
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  unifios-agent:
+    name: unifios-agent
+    display_name: "Unifios Agent"
+    description: "UniFi OS management and configuration specialist. Manages UniFi network devices, controllers, and Dream Machine configurations. Use for UniFi Dream Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall rules, wireless settings, network topology planning, security policy configuration, and performance optimization. Expert in UniFi switches, access points, gateways, controller management, and backup/restore operations."
+    model: sonnet
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+      - Glob
+      - Grep
+      - WebFetch
+      - mcp__ref__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  unraid-agent:
+    name: unraid-agent
+    display_name: "Unraid Agent"
+    description: "Unraid NAS system specialist managing array operations, Docker containers, VMs, cache pools, parity checks, and storage configuration. Expert in filesystem maintenance (XFS/BTRFS/ZFS), hardware setup (HBA mode, ECC RAM), security hardening, backup strategies, and performance tuning. Use for Unraid server management, troubleshooting, array expansion, disk replacement, plugin management, network configuration, and system optimization. Validates all operations against official Unraid documentation (docs.unraid.net) for versions 6.11-7.2+."
+    model: sonnet
+    tools:
+      - Read
+      - Write
+      - Edit
+      - Bash
+      - Glob
+      - Grep
+      - WebFetch
+      - mcp__ref__*
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
+
+  vllm-agent:
+    name: vllm-agent
+    display_name: "Vllm Agent"
+    description: "Deploy and manage vLLM inference server for high-performance LLM serving with OpenAI-compatible API, model management, performance optimization, and integration with agentic workflows"
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []  # TODO: Extract from prose or infer from Task tool usage
+    cannot_access: []  # TODO: Extract from 'Forbidden' sections
+    exclusive_access: []  # TODO: Extract from 'Exclusive ownership' sections
+    responsibilities: []  # TODO: Extract from 'What You Do' sections
+    forbidden: []  # TODO: Extract from 'What You Don't Do' sections
