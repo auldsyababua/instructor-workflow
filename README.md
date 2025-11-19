@@ -72,13 +72,39 @@ instructor-workflow/
 │       │   ├── settings.json  # Research tool permissions
 │       │   └── hooks/
 │       └── CLAUDE.md
-├── handoffs/                  # Agent coordination (validated JSON)
+├── docs/
+│   ├── architecture/          # Architecture documentation
+│   │   ├── adr/              # Architecture Decision Records
+│   │   └── system-design/    # Component diagrams, specifications
+│   ├── .scratch/             # Working notes and audit logs
+│   │   ├── sessions/         # Native Orchestrator workspace (future)
+│   │   ├── general-tracking/ # General tracking artifacts
+│   │   └── archive/          # Completed work retention
+│   └── shared-ref-docs/      # Agent reference materials
+├── handoffs/                 # Agent coordination (validated JSON)
 ├── scripts/
-│   ├── validate_handoff.py    # Instructor validation (Layer 5)
-│   ├── spawn-*.sh             # tmux agent spawning
-│   └── tef-status.sh          # Agent status monitor
-├── docs/.scratch/             # Research notes and audit logs
-└── .project-context.md        # Project configuration and patterns
+│   ├── setup/                # Installation scripts
+│   │   ├── download_skills.sh
+│   │   └── download_document_skills.sh
+│   ├── tracking/             # PR/git utilities
+│   │   ├── create_pr.py
+│   │   ├── create_pr_v2.sh
+│   │   └── tracking_pr5_extraction.py
+│   ├── validation/           # Test/verification scripts
+│   │   ├── quick_test.py
+│   │   ├── verify_fix.py
+│   │   ├── verify_fixes.py
+│   │   ├── run_tests.sh
+│   │   └── run_validation_tests.sh
+│   ├── archive/              # Archived one-off scripts
+│   │   └── one-off-git-executors/
+│   ├── validate_handoff.py   # Instructor validation (Layer 5)
+│   ├── spawn-*.sh            # tmux agent spawning
+│   └── tef-status.sh         # Agent status monitor
+├── skills/                   # Agent skills (58+ skills)
+├── reference/                # External reference materials
+├── logs/                     # Agent execution logs
+└── .project-context.md       # Project configuration and patterns
 ```
 
 ## Agent Launch Pattern
@@ -153,6 +179,22 @@ Current implementation: **Planning + Researcher** agents with full enforcement.
 - **Project Context**: `.project-context.md` - Complete architecture and enforcement details
 - **Agent Definitions**: `agents/*/CLAUDE.md` - Agent-specific boundaries and protocols
 - **Research Reference**: Your research document on Claude Code + IW compatibility
+
+## Repository Organization
+
+The repository follows a categorized structure for improved discoverability and maintainability.
+
+See [ADR-001: Repository Organization](docs/architecture/adr/001-repository-organization.md) for:
+- Directory structure rationale
+- Script organization categories (setup/tracking/validation/archive)
+- Scratch workspace retention policy
+- Migration history (Phases 1-5, completed 2025-11-19)
+
+**Script Categories**:
+- **setup/** - Installation and initial setup scripts
+- **tracking/** - PR creation and git tracking utilities
+- **validation/** - Test and verification scripts
+- **archive/** - Archived one-off scripts (see README for details)
 
 ## Contributing
 
