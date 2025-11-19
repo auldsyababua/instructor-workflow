@@ -7,6 +7,12 @@ import json
 import sys
 import re
 from pathlib import Path
+
+# Add .claude/hooks to Python path for utils imports
+HOOKS_DIR = Path(__file__).parent
+if str(HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(HOOKS_DIR))
+
 from utils.constants import ensure_session_log_dir
 
 # Allowed directories where rm -rf is permitted

@@ -19,6 +19,13 @@ import argparse
 import urllib.request
 import urllib.error
 from datetime import datetime
+from pathlib import Path
+
+# Add .claude/hooks to Python path for utils imports
+HOOKS_DIR = Path(__file__).parent
+if str(HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(HOOKS_DIR))
+
 from utils.summarizer import generate_event_summary
 from utils.model_extractor import get_model_from_transcript
 

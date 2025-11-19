@@ -2,7 +2,12 @@
 """Quick test script for HITL feature"""
 import sys
 import os
-sys.path.insert(0, os.path.dirname(__file__))
+from pathlib import Path
+
+# Add .claude/hooks to Python path for utils imports
+HOOKS_DIR = Path(__file__).parent
+if str(HOOKS_DIR) not in sys.path:
+    sys.path.insert(0, str(HOOKS_DIR))
 
 from utils.hitl import ask_permission
 

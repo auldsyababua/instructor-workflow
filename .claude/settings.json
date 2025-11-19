@@ -4,6 +4,21 @@
     "command": "uv run $CLAUDE_PROJECT_DIR/.claude/status_lines/status_line_main.py",
     "padding": 0
   },
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Bash(npm test)",
+      "Bash(npm test:*)",
+      "Bash(npm run :*)",
+      "mcp__reftools",
+      "mcp__exa",
+      "mcp__perplexity"
+    ],
+    "deny": [],
+    "ask": []
+  },
   "hooks": {
     "PreToolUse": [
       {
