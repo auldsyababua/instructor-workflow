@@ -38,6 +38,64 @@ import threading
 # LLM Guard for semantic prompt injection detection
 from llm_guard.input_scanners import PromptInjection
 
+# === PROMETHEUS CLIENT (OPTIONAL DEPENDENCY) ===
+# Graceful degradation: Metrics disabled if prometheus_client not installed
+# This allows handoff_models.py to work without prometheus_client dependency
+# in environments that don't need observability (e.g., testing, CI/CD)
+try:
+    from prometheus_client import Counter, Gauge
+    PROMETHEUS_AVAILABLE = True
+except ImportError:
+    # Prometheus client unavailable - metrics collection disabled
+    PROMETHEUS_AVAILABLE = False
+
+    # Stub classes to prevent NameError when metrics are referenced
+    class _MetricStub:
+        """No-op metric stub when prometheus_client unavailable."""
+        def inc(self, amount=1):
+            """No-op increment."""
+            pass
+
+        def dec(self, amount=1):
+            """No-op decrement."""
+            pass
+
+        def set(self, value):
+            """No-op set."""
+            pass
+
+        def labels(self, **_kwargs):
+            """No-op labels (return self for chaining)."""
+            return self
+
+    def _make_metric_stub(*_args, **_kwargs):
+        """Factory function returning no-op metric stub.
+
+        Args:
+            *_args: Unused positional args (API compatibility with Counter/Gauge)
+            **_kwargs: Unused keyword args (API compatibility with Counter/Gauge)
+
+        Returns:
+            _MetricStub: No-op metric stub for graceful degradation
+        """
+        return _MetricStub()
+
+    # Replace lambda assignments with factory function (Ruff-compliant)
+    Counter = _make_metric_stub
+    Gauge = _make_metric_stub
+
+# Prometheus metrics (no-op stubs if prometheus_client unavailable)
+llm_guard_scanner_failures_total = Counter(
+    'llm_guard_scanner_failures_total',
+    'Total LLM Guard scanner failures (fail-open events)',
+    ['error_type']  # Label for breakdown by exception class
+) if PROMETHEUS_AVAILABLE else _MetricStub()
+
+llm_guard_scanner_consecutive_failures = Gauge(
+    'llm_guard_scanner_consecutive_failures',
+    'Consecutive LLM Guard scanner failures (resets on success)'
+) if PROMETHEUS_AVAILABLE else _MetricStub()
+
 
 class PromptInjectionError(ValueError):
     """Raised when ML-based prompt injection detection identifies malicious input."""
@@ -131,6 +189,9 @@ def _get_injection_scanner():
 
     Initializes scanner on first use to prevent module import failures
     if LLM Guard models aren't available or environment issues occur.
+
+    Note: First call triggers model download/loading (1-2 seconds latency).
+          Subsequent calls return cached instance (negligible overhead).
 
     Returns:
         PromptInjection: Configured scanner instance
@@ -333,6 +394,11 @@ class AgentHandoff(BaseModel):
                 "to return 401 when token signature is invalid'"
             )
 
+        # Layer 2 (Prompt Injection Detection) - OWASP LLM01
+        # Scope: Semantic manipulation (context override, role manipulation, system prompt extraction)
+        # Does NOT detect: Command injection (OWASP LLM07) - Layer 3 responsibility
+        # See: ADR-005 (docs/architecture/adr/005-layer2-layer3-separation.md)
+        #
         # Check for prompt injection using LLM Guard (semantic detection)
         # NOTE: This replaces regex-based detection with ML model that understands context.
         # ML model can distinguish "Implement bash runner" (legitimate) from
@@ -356,12 +422,13 @@ class AgentHandoff(BaseModel):
                     f"Potential prompt injection detected (OWASP LLM01).\n\n"
                     f"Risk score: {risk_score:.3f} (threshold: 0.7)\n"
                     f"Confidence: {risk_score * 100:.1f}% likely malicious\n\n"
-                    "Security: Task description blocked to prevent context injection.\n\n"
-                    "This ML model detected semantic patterns indicating:\n"
+                    "Security: Task description blocked to prevent context manipulation.\n\n"
+                    "Layer 2 detected semantic patterns indicating:\n"
                     "  - Attempts to override agent instructions\n"
-                    "  - Role manipulation attacks\n"
-                    "  - Command injection patterns\n"
-                    "  - Encoding-based obfuscation\n\n"
+                    "  - Role manipulation attacks (privilege escalation via prompt)\n"
+                    "  - System prompt extraction attempts\n\n"
+                    "Note: Command injection and encoding attacks are validated at Layer 3.\n"
+                    "See: docs/architecture/adr/005-layer2-layer3-separation.md\n\n"
                     "If this is legitimate:\n"
                     "  1. Rephrase task description more clearly\n"
                     "  2. Avoid language that resembles attack patterns\n"
@@ -369,6 +436,13 @@ class AgentHandoff(BaseModel):
                     "     Example: 'Design CLI command parser' instead of 'Execute bash commands'\n"
                     "  4. Contact security team if risk score seems incorrect"
                 )
+
+            # === SUCCESS PATH: RESET CONSECUTIVE FAILURES ===
+            # Scanner succeeded - reset consecutive failure counter to 0
+            # This tracks scanner health: consecutive failures indicate sustained issues
+            if PROMETHEUS_AVAILABLE:
+                llm_guard_scanner_consecutive_failures.set(0)
+
             # NOTE: Ruff TRY003/TRY301 - Long inline error messages intentionally kept
             # for LLM/user guidance and security diagnostics. Rich error context is critical
             # for debugging prompt injection detection failures.
@@ -393,7 +467,15 @@ class AgentHandoff(BaseModel):
             # This decision favors uninterrupted agent operations while accepting temporary
             # security degradation. Review this trade-off based on your threat model.
 
-            # Scanner failure - fail open with logging
+            # === FAILURE PATH: INCREMENT METRICS ===
+            # Scanner failed - increment failure counters for monitoring/alerting
+            if PROMETHEUS_AVAILABLE:
+                # Increment total failure counter with error type label
+                llm_guard_scanner_failures_total.labels(
+                    error_type=type(e).__name__
+                ).inc()
+                # Increment consecutive failure counter (tracks sustained failures)
+                llm_guard_scanner_consecutive_failures.inc()
 
             # Log scanner failure for monitoring/alerting
             logger = logging.getLogger(__name__)
