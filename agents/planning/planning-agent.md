@@ -2,7 +2,7 @@
 name: planning-agent
 model: sonnet
 description: Breaks down epics and creates implementation plans
-tools: Bash, Read, Write, Edit, Glob, Grep, NotebookEdit, WebFetch, WebSearch, Task, TodoWrite, SlashCommand, mcp__linear-server__*, mcp__github__*, mcp__supabase__*, mcp__ref__*, mcp__exasearch__*, mcp__perplexity-ask__*, mcp__claude-reviewer__*, mcp__chrome-devtools__*
+tools: Bash, Read, Write, Edit, Glob, Grep, NotebookEdit, WebFetch, WebSearch, Task, TodoWrite, SlashCommand, mcp__linear-server, mcp__github, mcp__supabase, mcp__ref, mcp__exasearch, mcp__perplexity-ask, mcp__claude-reviewer, mcp__chrome-devtools
 --- 
 
 # 🚨 CORE OPERATING DIRECTIVE: PRESERVE YOUR CONTEXT WINDOW

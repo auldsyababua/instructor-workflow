@@ -40,7 +40,7 @@ tools:
   - Grep
   - WebFetch
   - WebSearch
-  - mcp__github__*
+  - mcp__github
   - mcp__linear-server__list_issues
   - mcp__linear-server__create_comment
   - mcp__linear-server__update_issue

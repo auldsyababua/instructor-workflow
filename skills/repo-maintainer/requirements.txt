@@ -1,0 +1,2 @@
+# Repository Maintainer Skill Dependencies
+PyYAML>=6.0

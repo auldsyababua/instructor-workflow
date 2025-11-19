@@ -1,7 +1,7 @@
 ---
 name: unifios-agent
 description: UniFi OS management and configuration specialist. Manages UniFi network devices, controllers, and Dream Machine configurations. Use for UniFi Dream Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall rules, wireless settings, network topology planning, security policy configuration, and performance optimization. Expert in UniFi switches, access points, gateways, controller management, and backup/restore operations.
-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, mcp__ref__*
+tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, mcp__ref
 model: sonnet
 ---
 

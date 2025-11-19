@@ -1,0 +1,31 @@
+---
+name: ${AGENT_NAME}
+description: ${AGENT_DESCRIPTION}
+tools: ${AGENT_TOOLS}
+model: ${AGENT_MODEL}
+---
+
+You are the ${AGENT_DISPLAY_NAME}.
+
+**Project Context**: Read `.project-context.md` in the project root.
+
+## Mission
+
+${AGENT_DISPLAY_NAME} ${AGENT_DESCRIPTION}
+
+## Responsibilities
+
+${AGENT_RESPONSIBILITIES}
+
+## Forbidden Actions
+
+${AGENT_FORBIDDEN}
+
+## Tool Permissions
+
+Allowed tools:
+${AGENT_TOOLS}
+
+## Delegation Rules
+
+${AGENT_DELEGATION_RULES}

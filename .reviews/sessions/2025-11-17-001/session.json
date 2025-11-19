@@ -1,0 +1,187 @@
+{
+  "review_id": "2025-11-17-001",
+  "created_at": "2025-11-17T20:26:14.965Z",
+  "updated_at": "2025-11-17T22:54:59.507Z",
+  "status": "needs_changes",
+  "rounds": [
+    {
+      "review_id": "2025-11-17-001",
+      "timestamp": "2025-11-17T20:27:48.813Z",
+      "status": "approved",
+      "round": 1,
+      "design_compliance": {
+        "follows_architecture": true,
+        "major_violations": []
+      },
+      "comments": [
+        {
+          "type": "general",
+          "severity": "minor",
+          "category": "architecture",
+          "comment": "The PR successfully addresses 9 of 10 CodeRabbit nitpick suggestions as documented, implementing critical fixes and improvements across multiple areas of the codebase.",
+          "suggested_fix": "None needed - work is complete and correctly scoped."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/monitor_xpass.sh",
+          "line": 30,
+          "severity": "minor",
+          "category": "style",
+          "comment": "The exit code capture fix is correctly implemented. The script now properly captures pytest exit code before re-enabling error exit mode, preventing false-positive success when pytest fails.",
+          "suggested_fix": "None needed - implementation is correct."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/handoff_models.py",
+          "line": 92,
+          "severity": "minor",
+          "category": "design",
+          "comment": "The PromptInjectionError custom exception class is properly implemented, providing type-safe exception handling over brittle string matching.",
+          "suggested_fix": "None needed - implementation follows best practices."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/handoff_models.py",
+          "line": 116,
+          "severity": "minor",
+          "category": "performance",
+          "comment": "The capability matrix has been correctly refactored as a module-level constant with validation, improving performance and maintainability.",
+          "suggested_fix": "None needed - refactoring is complete and well-structured."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/handoff_models.py",
+          "line": 28,
+          "severity": "suggestion",
+          "category": "style",
+          "comment": "The CUDA comment has been updated to accurately reflect setdefault() behavior, allowing explicit GPU configuration while defaulting to CPU-only.",
+          "suggested_fix": "None needed - documentation is now accurate."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/test_xfail_validation.py",
+          "line": 28,
+          "severity": "minor",
+          "category": "design",
+          "comment": "The PROJECT_ROOT computation has been correctly updated to use Path(__file__).parent.parent for portability across environments, removing hard-coded paths.",
+          "suggested_fix": "None needed - implementation is correct and portable."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/test_xfail_validation.py",
+          "line": 156,
+          "severity": "minor",
+          "category": "bug",
+          "comment": "Added timeout handling to subprocess.run() call to prevent hanging, addressing the critical test infrastructure issue.",
+          "suggested_fix": "None needed - timeout is properly implemented."
+        },
+        {
+          "type": "specific",
+          "file": "observability/grafana-dashboards/llm-guard-scanner-health.json",
+          "line": 26,
+          "severity": "minor",
+          "category": "design",
+          "comment": "Grafana dashboard correctly uses sum() aggregation for multi-instance deployment, preventing misleading metrics in distributed environments.",
+          "suggested_fix": "None needed - aggregation queries are correct."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/test_scanner_observability.py",
+          "line": 136,
+          "severity": "minor",
+          "category": "style",
+          "comment": "Test assertions have been properly strengthened to verify both the handoff object return and specific values, improving test quality.",
+          "suggested_fix": "None needed - assertions are comprehensive."
+        },
+        {
+          "type": "specific",
+          "file": "scripts/monitor_xpass.sh",
+          "line": 24,
+          "severity": "minor",
+          "category": "style",
+          "comment": "The ShellCheck SC2064 compliance fix (trap with single quotes) ensures proper CI-safe cleanup without race conditions.",
+          "suggested_fix": "None needed - ShellCheck compliance achieved."
+        },
+        {
+          "type": "general",
+          "severity": "suggestion",
+          "category": "style",
+          "comment": "The decision to defer nitpick #9 (thread-local context) to a future concurrency PR is well-documented and reasonable given the current single-threaded usage pattern.",
+          "suggested_fix": "Track this for future implementation when multi-threading is added."
+        }
+      ],
+      "missing_requirements": [],
+      "summary": {
+        "design_violations": 0,
+        "critical_issues": 0,
+        "major_issues": 0,
+        "minor_issues": 9,
+        "suggestions": 2
+      },
+      "test_results": {
+        "passed": null,
+        "summary": "Tests were not executed due to approval requirements. The test command `pytest scripts/ -v && ./scripts/monitor_xpass.sh` was provided but requires user approval to run.",
+        "failing_tests": [],
+        "coverage": null
+      },
+      "overall_assessment": "lgtm",
+      "__claudeSessionId": "120f6b83-94a0-4d33-8b8d-970bd2484773",
+      "__claudeModel": "opus"
+    },
+    {
+      "review_id": "2025-11-17-001",
+      "timestamp": "2025-11-17T22:54:59.507Z",
+      "status": "needs_changes",
+      "round": 2,
+      "design_compliance": {
+        "follows_architecture": false,
+        "major_violations": [
+          {
+            "issue": "Review Parse Error",
+            "description": "Failed to parse Claude CLI response: No JSON object found in result",
+            "impact": "major",
+            "recommendation": "Check Claude CLI output and ensure it returns valid JSON with --output-format json"
+          }
+        ]
+      },
+      "comments": [
+        {
+          "type": "general",
+          "severity": "major",
+          "category": "design",
+          "comment": "Review could not be parsed from Claude CLI response.",
+          "suggested_fix": "Verify Claude CLI is working correctly and returns the expected JSON format"
+        }
+      ],
+      "missing_requirements": [],
+      "summary": {
+        "design_violations": 1,
+        "critical_issues": 0,
+        "major_issues": 1,
+        "minor_issues": 0,
+        "suggestions": 0
+      },
+      "test_results": {
+        "passed": false,
+        "summary": "Review parsing failed"
+      },
+      "overall_assessment": "needs_changes",
+      "__claudeSessionId": "120f6b83-94a0-4d33-8b8d-970bd2484773",
+      "__claudeModel": "opus"
+    }
+  ],
+  "request": {
+    "summary": "PR #5 nitpick fixes: Implemented 9 of 10 CodeRabbit suggestions including critical pytest failure hiding fix, markdownlint compliance, Prometheus stub refactoring, test portability improvements, Grafana aggregation, and test quality enhancements.",
+    "focus_areas": [
+      "scripts/monitor_xpass.sh - exit code capture logic (CRITICAL fix)",
+      "scripts/handoff_models.py - Prometheus stub refactoring for Ruff compliance",
+      "scripts/test_xfail_validation.py - portability improvements (computed PROJECT_ROOT)",
+      "observability/grafana-dashboards/llm-guard-scanner-health.json - aggregate query syntax",
+      "Documentation markdown compliance (ADR-005, test README)"
+    ],
+    "test_command": "pytest scripts/ -v && ./scripts/monitor_xpass.sh"
+  },
+  "claudeSessionIds": {
+    "opus": "120f6b83-94a0-4d33-8b8d-970bd2484773"
+  }
+}

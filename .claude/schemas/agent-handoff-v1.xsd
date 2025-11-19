@@ -1,0 +1,154 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+  xmlns:xs="http://www.w3.org/2001/XMLSchema"
+  targetNamespace="http://instructor-workflow.org/agent-handoff/v1"
+  xmlns="http://instructor-workflow.org/agent-handoff/v1"
+  elementFormDefault="qualified"
+  attributeFormDefault="unqualified">
+
+  <xs:annotation>
+    <xs:documentation>
+      Native Orchestrator Agent Handoff Protocol Schema v1.0
+      Purpose: Standardize task delegation between agents
+      Last Updated: 2025-11-19
+    </xs:documentation>
+  </xs:annotation>
+
+  <!-- Root element -->
+  <xs:element name="agent_request" type="AgentRequestType"/>
+
+  <!-- Main request structure -->
+  <xs:complexType name="AgentRequestType">
+    <xs:sequence>
+      <xs:element name="mode" type="ModeType" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Execution mode for this request:
+            - spawn: Create new tmux session for child agent
+            - conversation_only: Provide context, no session creation
+            - blocking: Parent waits for completion before proceeding
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="original_intent" type="xs:string" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Brief description of parent agent's overarching goal.
+            Example: "Complete repository reorganization Phase 2"
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="current_task_summary" type="xs:string" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Concise summary of this specific task (1-2 sentences).
+            Example: "Validate Grafana service status and dashboard accessibility"
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="workflow" type="WorkflowType" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Workflow methodology to follow:
+            - SPIKE: Research/exploration phase, no production changes
+            - TDD: Test-driven development with QA oversight
+            - standard: Normal implementation workflow
+            - none: No specific workflow required
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="task_details" type="xs:string" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Detailed task instructions. May include:
+            - Step-by-step procedures
+            - Commands to execute
+            - Files to examine
+            - Success criteria
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="constraints" type="ConstraintsType" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Hard constraints on execution (blocking conditions, prohibited actions).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="deliverables" type="DeliverablesType" minOccurs="1" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Expected outputs from this task (files, reports, decisions).
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+
+      <xs:element name="backlog_notes" type="xs:string" minOccurs="0" maxOccurs="1">
+        <xs:annotation>
+          <xs:documentation>
+            Context for future continuation if task is interrupted or deferred.
+            Example: "If validation fails, create Linear issue and escalate"
+          </xs:documentation>
+        </xs:annotation>
+      </xs:element>
+    </xs:sequence>
+
+    <!-- Optional attributes for metadata -->
+    <xs:attribute name="version" type="xs:string" default="1.0"/>
+    <xs:attribute name="session_id" type="xs:string" use="optional"/>
+    <xs:attribute name="parent_agent" type="xs:string" use="optional"/>
+    <xs:attribute name="target_agent" type="xs:string" use="optional"/>
+  </xs:complexType>
+
+  <!-- Mode enumeration -->
+  <xs:simpleType name="ModeType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="spawn"/>
+      <xs:enumeration value="conversation_only"/>
+      <xs:enumeration value="blocking"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Workflow enumeration -->
+  <xs:simpleType name="WorkflowType">
+    <xs:restriction base="xs:string">
+      <xs:enumeration value="SPIKE"/>
+      <xs:enumeration value="TDD"/>
+      <xs:enumeration value="standard"/>
+      <xs:enumeration value="none"/>
+    </xs:restriction>
+  </xs:simpleType>
+
+  <!-- Constraints structure -->
+  <xs:complexType name="ConstraintsType">
+    <xs:sequence>
+      <xs:element name="constraint" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- Deliverables structure -->
+  <xs:complexType name="DeliverablesType">
+    <xs:sequence>
+      <xs:element name="file" type="FileDeliverableType" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="decision" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:element name="report" type="xs:string" minOccurs="0" maxOccurs="unbounded"/>
+    </xs:sequence>
+  </xs:complexType>
+
+  <!-- File deliverable with path attribute -->
+  <xs:complexType name="FileDeliverableType">
+    <xs:simpleContent>
+      <xs:extension base="xs:string">
+        <xs:attribute name="path" type="xs:string" use="required"/>
+        <xs:attribute name="required" type="xs:boolean" default="true"/>
+      </xs:extension>
+    </xs:simpleContent>
+  </xs:complexType>
+
+</xs:schema>

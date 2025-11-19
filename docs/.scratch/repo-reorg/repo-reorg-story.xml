@@ -1,0 +1,625 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<implementation-story>
+  <metadata>
+    <story-id>REPO-REORG-PHASES-1-3</story-id>
+    <created-date>2025-11-18</created-date>
+    <created-by>researcher-agent</created-by>
+    <target-agent>devops-agent</target-agent>
+    <priority>high</priority>
+    <estimated-duration>2-3 hours</estimated-duration>
+  </metadata>
+
+  <context>
+    <description>
+      Execute repository reorganization Phases 1-3 to clean root directory,
+      organize scripts by function, and structure scratch workspace for
+      Native Orchestrator integration.
+    </description>
+
+    <reference-documents>
+      <document path="/srv/projects/instructor-workflow/docs/architecture/repo-reorg-plan.md" section="Phases 1-3"/>
+      <document path="/srv/projects/instructor-workflow/docs/.scratch/research-system-audit/q1-git-script-analysis.md" section="Q1 Resolution"/>
+    </reference-documents>
+
+    <key-decisions>
+      <decision id="Q1-RESOLUTION">
+        <question>Which git commit script is canonical?</question>
+        <answer>None - all 7 scripts are one-off task executors. Archive to scripts/archive/one-off-git-executors/ per Q1 analysis.</answer>
+        <rationale>Tracking Agent conversational delegation is canonical workflow (already operational). No production dependencies on scripts.</rationale>
+      </decision>
+    </key-decisions>
+  </context>
+
+  <scope>
+    <phases>
+      <phase number="1" name="Create Directory Structure" risk="low">
+        <description>Create target directories for organized scripts and documentation (additive only, no moves)</description>
+        <operations-count>8</operations-count>
+        <rollback>Delete empty directories</rollback>
+      </phase>
+
+      <phase number="2" name="Move Utilities" risk="medium">
+        <description>Relocate operational scripts from root to organized locations using git mv</description>
+        <operations-count>30</operations-count>
+        <sub-phases>
+          <sub-phase id="2.1" name="Setup Scripts" operations="2"/>
+          <sub-phase id="2.2" name="Tracking Scripts" operations="3"/>
+          <sub-phase id="2.3" name="Validation Scripts" operations="6"/>
+          <sub-phase id="2.4" name="Archive Git Scripts" operations="10"/>
+        </sub-phases>
+        <rollback>git reset --hard pre-reorg-TAG</rollback>
+      </phase>
+
+      <phase number="3" name="Documentation Reorganization" risk="low">
+        <description>Move ephemeral/completed docs to archive and general tracking</description>
+        <operations-count>4</operations-count>
+        <rollback>git restore docs/.scratch/</rollback>
+      </phase>
+    </phases>
+
+    <files-affected>
+      <count>42</count>
+      <breakdown>
+        <category name="Root scripts to move">23</category>
+        <category name="Git scripts to archive">10</category>
+        <category name="Documentation files">4</category>
+        <category name="Directories to create">8</category>
+      </breakdown>
+    </files-affected>
+  </scope>
+
+  <pre-migration-checklist>
+    <step id="safety-1" critical="true">
+      <action>Create git tag for rollback point</action>
+      <command>git tag pre-reorg-$(date +%Y%m%d-%H%M%S)</command>
+      <verification>git tag | grep pre-reorg</verification>
+    </step>
+
+    <step id="safety-2" critical="true">
+      <action>Ensure clean working directory</action>
+      <command>git status</command>
+      <expected-output>nothing to commit, working tree clean</expected-output>
+      <note>If untracked files exist, that's OK. We're moving them.</note>
+    </step>
+
+    <step id="safety-3" critical="false">
+      <action>Backup .claude/ configuration</action>
+      <command>cp -r .claude/ .claude.backup-$(date +%Y%m%d)</command>
+      <verification>ls -d .claude.backup-*</verification>
+    </step>
+
+    <step id="safety-4" critical="true">
+      <action>Document script cross-references</action>
+      <command>grep -r "download_skills\|quick_test\|layer5_git" --include="*.md" --include="*.sh" --include="*.py" . > /tmp/script-refs-before.txt</command>
+      <verification>wc -l /tmp/script-refs-before.txt</verification>
+      <note>Save for comparison after migration to catch broken references</note>
+    </step>
+  </pre-migration-checklist>
+
+  <phase-1-operations>
+    <description>Create New Directory Structure (Additive, Low Risk)</description>
+
+    <operation id="1.1">
+      <action>Create architecture documentation directories</action>
+      <commands>
+        <command>mkdir -p /srv/projects/instructor-workflow/docs/architecture/adr</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/docs/architecture/system-design</command>
+      </commands>
+      <verification>
+        <command>test -d /srv/projects/instructor-workflow/docs/architecture/adr &amp;&amp; echo "OK: adr/" || echo "FAIL: adr/"</command>
+        <command>test -d /srv/projects/instructor-workflow/docs/architecture/system-design &amp;&amp; echo "OK: system-design/" || echo "FAIL: system-design/"</command>
+      </verification>
+    </operation>
+
+    <operation id="1.2">
+      <action>Create scratch workspace organization directories</action>
+      <commands>
+        <command>mkdir -p /srv/projects/instructor-workflow/docs/.scratch/sessions</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/docs/.scratch/archive</command>
+      </commands>
+      <note>docs/.scratch/general-tracking/ already exists, skip creation</note>
+      <verification>
+        <command>test -d /srv/projects/instructor-workflow/docs/.scratch/sessions &amp;&amp; echo "OK: sessions/" || echo "FAIL: sessions/"</command>
+        <command>test -d /srv/projects/instructor-workflow/docs/.scratch/archive &amp;&amp; echo "OK: archive/" || echo "FAIL: archive/"</command>
+      </verification>
+    </operation>
+
+    <operation id="1.3">
+      <action>Create scripts organization directories</action>
+      <commands>
+        <command>mkdir -p /srv/projects/instructor-workflow/scripts/ops</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/scripts/setup</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/scripts/tracking</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/scripts/validation</command>
+        <command>mkdir -p /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors</command>
+      </commands>
+      <verification>
+        <command>tree -L 2 /srv/projects/instructor-workflow/scripts/</command>
+        <expected-structure>
+          scripts/
+          ├── archive/
+          │   └── one-off-git-executors/
+          ├── ops/
+          ├── setup/
+          ├── tracking/
+          └── validation/
+        </expected-structure>
+      </verification>
+    </operation>
+
+    <operation id="1.4">
+      <action>Create .github directory for PR template</action>
+      <commands>
+        <command>mkdir -p /srv/projects/instructor-workflow/.github</command>
+      </commands>
+      <verification>
+        <command>test -d /srv/projects/instructor-workflow/.github &amp;&amp; echo "OK: .github/" || echo "FAIL: .github/"</command>
+      </verification>
+    </operation>
+
+    <phase-1-commit>
+      <message>chore: create directory structure for repository reorganization (Phase 1)</message>
+      <files-to-stage>
+        <file>docs/architecture/</file>
+        <file>docs/.scratch/sessions/</file>
+        <file>docs/.scratch/archive/</file>
+        <file>scripts/ops/</file>
+        <file>scripts/setup/</file>
+        <file>scripts/tracking/</file>
+        <file>scripts/validation/</file>
+        <file>scripts/archive/</file>
+        <file>.github/</file>
+      </files-to-stage>
+      <note>Use git add -A to stage new directories with .gitkeep if needed</note>
+    </phase-1-commit>
+  </phase-1-operations>
+
+  <phase-2-operations>
+    <description>Move Utilities (Medium Risk, Reversible)</description>
+
+    <sub-phase id="2.1" name="Setup Scripts" risk="low">
+      <operation id="2.1.1">
+        <action>Move skill download scripts to scripts/setup/</action>
+        <commands>
+          <command>git mv /srv/projects/instructor-workflow/download_skills.sh /srv/projects/instructor-workflow/scripts/setup/</command>
+          <command>git mv /srv/projects/instructor-workflow/download_document_skills.sh /srv/projects/instructor-workflow/scripts/setup/</command>
+        </commands>
+        <verification>
+          <command>ls /srv/projects/instructor-workflow/scripts/setup/*.sh</command>
+          <expected-files>
+            - download_skills.sh
+            - download_document_skills.sh
+          </expected-files>
+        </verification>
+        <reference-check>
+          <command>grep -r "download_skills\.sh" /srv/projects/instructor-workflow --include="*.md" | grep -v "Binary file"</command>
+          <action-if-matches>Update references to new path scripts/setup/download_skills.sh</action-if-matches>
+        </reference-check>
+      </operation>
+
+      <sub-phase-commit>
+        <message>chore: move setup scripts to scripts/setup/ (Phase 2.1)</message>
+        <verification>git status shows moved files, not deleted+created</verification>
+      </sub-phase-commit>
+    </sub-phase>
+
+    <sub-phase id="2.2" name="Tracking Scripts" risk="medium">
+      <operation id="2.2.1">
+        <action>Move PR and tracking utilities to scripts/tracking/</action>
+        <commands>
+          <command>git mv /srv/projects/instructor-workflow/create_pr.py /srv/projects/instructor-workflow/scripts/tracking/</command>
+          <command>git mv /srv/projects/instructor-workflow/create_pr_v2.sh /srv/projects/instructor-workflow/scripts/tracking/</command>
+          <command>git mv /srv/projects/instructor-workflow/tracking_pr5_extraction.py /srv/projects/instructor-workflow/scripts/tracking/</command>
+        </commands>
+        <verification>
+          <command>ls /srv/projects/instructor-workflow/scripts/tracking/</command>
+          <expected-files>
+            - create_pr.py
+            - create_pr_v2.sh
+            - tracking_pr5_extraction.py
+          </expected-files>
+        </verification>
+        <reference-check>
+          <command>grep -r "create_pr\.py\|tracking_pr5" /srv/projects/instructor-workflow --include="*.md" --include="*.sh" | grep -v "Binary file"</command>
+          <action-if-matches>Update references to new paths in scripts/tracking/</action-if-matches>
+        </reference-check>
+      </operation>
+
+      <sub-phase-commit>
+        <message>chore: move tracking utilities to scripts/tracking/ (Phase 2.2)</message>
+      </sub-phase-commit>
+    </sub-phase>
+
+    <sub-phase id="2.3" name="Validation Scripts" risk="medium">
+      <operation id="2.3.1">
+        <action>Move test and verification scripts to scripts/validation/</action>
+        <commands>
+          <command>git mv /srv/projects/instructor-workflow/quick_test.py /srv/projects/instructor-workflow/scripts/validation/</command>
+          <command>git mv /srv/projects/instructor-workflow/test_fixes_verification.py /srv/projects/instructor-workflow/scripts/validation/</command>
+          <command>git mv /srv/projects/instructor-workflow/verify_fix.py /srv/projects/instructor-workflow/scripts/validation/</command>
+          <command>git mv /srv/projects/instructor-workflow/verify_fixes.py /srv/projects/instructor-workflow/scripts/validation/</command>
+          <command>git mv /srv/projects/instructor-workflow/run_tests.sh /srv/projects/instructor-workflow/scripts/validation/</command>
+          <command>git mv /srv/projects/instructor-workflow/run_validation_tests.sh /srv/projects/instructor-workflow/scripts/validation/</command>
+        </commands>
+        <verification>
+          <command>ls /srv/projects/instructor-workflow/scripts/validation/*.py /srv/projects/instructor-workflow/scripts/validation/*.sh 2>/dev/null | wc -l</command>
+          <expected-output>6</expected-output>
+        </verification>
+        <reference-check>
+          <command>grep -r "quick_test\.py\|run_tests\.sh\|verify_fix" /srv/projects/instructor-workflow --include="*.md" --include="*.yaml" | grep -v "Binary file"</command>
+          <action-if-matches>Update references to new paths in scripts/validation/</action-if-matches>
+          <note>Check README.md test instructions - likely references run_tests.sh</note>
+        </reference-check>
+      </operation>
+
+      <sub-phase-commit>
+        <message>chore: move validation scripts to scripts/validation/ (Phase 2.3)</message>
+      </sub-phase-commit>
+    </sub-phase>
+
+    <sub-phase id="2.4" name="Archive Git Scripts" risk="high" critical="true">
+      <description>Archive all one-off git commit executors per Q1 analysis</description>
+
+      <operation id="2.4.1">
+        <action>Archive git commit scripts (NOT moved to git-automation/ - ARCHIVED)</action>
+        <rationale>
+          Per Q1 analysis: All 7 scripts are one-off task executors, not reusable infrastructure.
+          Tracking Agent conversational delegation is canonical workflow.
+          Archive for historical record only.
+        </rationale>
+        <commands>
+          <command>git mv /srv/projects/instructor-workflow/layer5_git_commit.py /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/do_commit.py /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/execute_commit.py /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/git_commit.sh /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/do_git_commit.sh /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/tracking_agent_git_execute.py /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+          <command>git mv /srv/projects/instructor-workflow/.git_commit_exec /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/</command>
+        </commands>
+        <verification>
+          <command>ls /srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/ | wc -l</command>
+          <expected-output>7</expected-output>
+        </verification>
+        <verification-cleanup>
+          <command>ls /srv/projects/instructor-workflow/*.py 2>/dev/null | grep -E "(layer5|do_commit|execute_commit|tracking_agent_git)"</command>
+          <expected-output>No matches (empty output)</expected-output>
+        </verification-cleanup>
+      </operation>
+
+      <operation id="2.4.2">
+        <action>Create archive README documenting script history</action>
+        <file-path>/srv/projects/instructor-workflow/scripts/archive/one-off-git-executors/README.md</file-path>
+        <content-template>
+# Archived: One-Off Git Commit Executors
+
+**Status**: ARCHIVED - Not for production use
+**Date Archived**: 2025-11-18
+**Reason**: Replaced by Tracking Agent conversational git delegation
+
+## Context
+
+These scripts were created by various agents (Tracking Agent, Software Architect)
+as one-off executors for specific commits during feature development.
+
+**They are NOT reusable infrastructure** - each hardcodes:
+- Specific commit messages
+- Specific file lists
+- Specific target branches
+
+## Historical Record
+
+- `layer5_git_commit.py` - Layer 5 security validation commit (feature branch)
+- `do_commit.py` - Simplified version of layer5_git_commit.py
+- `execute_commit.py` - PR #5 CodeRabbit nitpick fixes
+- `git_commit.sh` - Bash version of layer5_git_commit.py
+- `do_git_commit.sh` - Bash version of execute_commit.py
+- `tracking_agent_git_execute.py` - IW enforcement validation commit (main branch)
+- `.git_commit_exec` - PR #5 one-liner exec wrapper
+
+## Current Git Workflow
+
+**Use Tracking Agent conversational delegation** for all git operations:
+
+1. Parent agent completes task
+2. Parent agent hands off to Tracking Agent with exact git commands
+3. Tracking Agent executes verbatim, verifies, reports completion
+
+See `agents/tracking/tracking-agent.md` for protocol.
+
+## Why Not Keep as Templates?
+
+- **Too specific**: Each script hardcodes task-specific details
+- **Misleading**: Implies they're meant to be run again
+- **Maintenance burden**: Keeping them up-to-date with current repo structure
+- **Better alternative**: Use `git commit -m` directly or delegate to Tracking Agent
+
+## Analysis
+
+For detailed analysis of these scripts, see:
+`docs/.scratch/research-system-audit/q1-git-script-analysis.md`
+        </content-template>
+      </operation>
+
+      <sub-phase-commit>
+        <message>chore: archive one-off git executors with README (Phase 2.4)</message>
+        <note>CRITICAL: These are archived, not moved to production git-automation/</note>
+      </sub-phase-commit>
+    </sub-phase>
+  </phase-2-operations>
+
+  <phase-3-operations>
+    <description>Documentation Reorganization (Low Risk)</description>
+
+    <operation id="3.1">
+      <action>Archive completed work documentation</action>
+      <commands>
+        <command>git mv /srv/projects/instructor-workflow/HOTFIX-HOOK-IMPORTS-COMPLETION.md /srv/projects/instructor-workflow/docs/.scratch/archive/</command>
+        <command>git mv /srv/projects/instructor-workflow/TRACKING-AGENT-STATUS.txt /srv/projects/instructor-workflow/docs/.scratch/archive/</command>
+      </commands>
+      <verification>
+        <command>ls /srv/projects/instructor-workflow/docs/.scratch/archive/HOTFIX* /srv/projects/instructor-workflow/docs/.scratch/archive/TRACKING*</command>
+        <expected-output>Both files exist in archive/</expected-output>
+      </verification>
+    </operation>
+
+    <operation id="3.2">
+      <action>Move PR template to .github/</action>
+      <commands>
+        <command>git mv /srv/projects/instructor-workflow/pr_template.txt /srv/projects/instructor-workflow/.github/pull_request_template.md</command>
+      </commands>
+      <note>Rename to pull_request_template.md for GitHub auto-detection</note>
+      <verification>
+        <command>test -f /srv/projects/instructor-workflow/.github/pull_request_template.md &amp;&amp; echo "OK" || echo "FAIL"</command>
+      </verification>
+    </operation>
+
+    <operation id="3.3">
+      <action>Decision: whats-next.md disposition</action>
+      <decision-tree>
+        <if condition="File contains current/active handoff context">
+          <action>Keep in root for visibility</action>
+          <command>echo "Keeping whats-next.md in root (active handoff)"</command>
+        </if>
+        <if condition="File is stale/superseded">
+          <action>Archive with timestamp</action>
+          <command>git mv /srv/projects/instructor-workflow/whats-next.md /srv/projects/instructor-workflow/docs/.scratch/archive/whats-next-$(date +%Y%m%d).md</command>
+        </if>
+      </decision-tree>
+      <note>DevOps Agent should inspect whats-next.md content before deciding</note>
+    </operation>
+
+    <phase-3-commit>
+      <message>chore: reorganize documentation files (Phase 3)</message>
+    </phase-3-commit>
+  </phase-3-operations>
+
+  <post-migration-validation>
+    <step id="validate-1">
+      <action>Verify root directory cleanup</action>
+      <command>ls /srv/projects/instructor-workflow/*.py /srv/projects/instructor-workflow/*.sh 2>/dev/null | wc -l</command>
+      <expected-output>0 (all scripts moved)</expected-output>
+    </step>
+
+    <step id="validate-2">
+      <action>Check for broken references</action>
+      <command>grep -r "download_skills\|quick_test\|layer5_git" /srv/projects/instructor-workflow --include="*.md" --include="*.sh" --include="*.py" . > /tmp/script-refs-after.txt</command>
+      <comparison>diff /tmp/script-refs-before.txt /tmp/script-refs-after.txt</comparison>
+      <action-if-different>Update documentation to reflect new script paths</action-if-different>
+    </step>
+
+    <step id="validate-3">
+      <action>Verify directory structure</action>
+      <command>tree -L 3 /srv/projects/instructor-workflow/scripts/ /srv/projects/instructor-workflow/docs/</command>
+      <manual-check>Confirm structure matches repo-reorg-plan.md Section B</manual-check>
+    </step>
+
+    <step id="validate-4">
+      <action>Test a moved script</action>
+      <command>bash /srv/projects/instructor-workflow/scripts/validation/run_tests.sh --help 2>&1 | head -5</command>
+      <expected>Script runs without "file not found" errors</expected>
+      <note>Verifies scripts are executable after move</note>
+    </step>
+
+    <step id="validate-5">
+      <action>Check git history preservation</action>
+      <command>git log --follow --oneline /srv/projects/instructor-workflow/scripts/setup/download_skills.sh | head -3</command>
+      <expected>Shows commit history from when file was in root</expected>
+      <note>Confirms git mv preserved history</note>
+    </step>
+  </post-migration-validation>
+
+  <rollback-procedures>
+    <procedure name="Full Rollback">
+      <description>Revert entire migration (all phases)</description>
+      <commands>
+        <command>git reset --hard pre-reorg-TIMESTAMP</command>
+        <command>git tag -d pre-reorg-TIMESTAMP</command>
+      </commands>
+      <verification>git status shows clean working directory at pre-migration state</verification>
+    </procedure>
+
+    <procedure name="Phase 1 Only">
+      <description>Remove empty directories created in Phase 1</description>
+      <commands>
+        <command>rm -rf /srv/projects/instructor-workflow/docs/architecture</command>
+        <command>rm -rf /srv/projects/instructor-workflow/docs/.scratch/sessions</command>
+        <command>rm -rf /srv/projects/instructor-workflow/docs/.scratch/archive</command>
+        <command>rm -rf /srv/projects/instructor-workflow/scripts/ops</command>
+        <command>rm -rf /srv/projects/instructor-workflow/scripts/setup</command>
+        <command>rm -rf /srv/projects/instructor-workflow/scripts/tracking</command>
+        <command>rm -rf /srv/projects/instructor-workflow/scripts/validation</command>
+        <command>rm -rf /srv/projects/instructor-workflow/scripts/archive</command>
+        <command>git restore /srv/projects/instructor-workflow/docs/ /srv/projects/instructor-workflow/scripts/</command>
+      </commands>
+    </procedure>
+
+    <procedure name="Phase 2 Specific Sub-Phase">
+      <description>Rollback specific Phase 2 sub-phase</description>
+      <commands>
+        <command>git reset --hard HEAD~1</command>
+      </commands>
+      <note>Each sub-phase has its own commit, so HEAD~1 reverts last sub-phase</note>
+    </procedure>
+  </rollback-procedures>
+
+  <success-criteria>
+    <criterion id="sc-1">
+      <description>All 30+ scripts relocated to organized directories</description>
+      <validation>ls /srv/projects/instructor-workflow/*.py *.sh returns empty</validation>
+    </criterion>
+
+    <criterion id="sc-2">
+      <description>No broken references in documentation</description>
+      <validation>grep searches return no outdated script paths in .md files</validation>
+    </criterion>
+
+    <criterion id="sc-3">
+      <description>Git history preserved for all moved files</description>
+      <validation>git log --follow shows commit history before move</validation>
+    </criterion>
+
+    <criterion id="sc-4">
+      <description>All tests pass after migration</description>
+      <validation>bash scripts/validation/run_tests.sh exits 0</validation>
+    </criterion>
+
+    <criterion id="sc-5">
+      <description>Directory structure matches repo-reorg-plan.md</description>
+      <validation>Manual review of tree output against Section B</validation>
+    </criterion>
+
+    <criterion id="sc-6">
+      <description>Git scripts archived with explanatory README</description>
+      <validation>test -f scripts/archive/one-off-git-executors/README.md</validation>
+    </criterion>
+  </success-criteria>
+
+  <gotchas>
+    <gotcha id="gotcha-1" severity="high">
+      <issue>Phase 2.4 git scripts must be ARCHIVED, not moved to git-automation/</issue>
+      <reason>Per Q1 analysis, scripts are one-off executors, not production infrastructure</reason>
+      <correct-action>Move to scripts/archive/one-off-git-executors/ with README</correct-action>
+      <incorrect-action>Moving to scripts/git-automation/ implies production use</incorrect-action>
+    </gotcha>
+
+    <gotcha id="gotcha-2" severity="medium">
+      <issue>docs/.scratch/general-tracking/ already exists</issue>
+      <reason>Created in prior work, not part of Phase 1</reason>
+      <correct-action>Skip mkdir for general-tracking/, verify existence only</correct-action>
+      <incorrect-action>mkdir -p will succeed but is unnecessary</incorrect-action>
+    </gotcha>
+
+    <gotcha id="gotcha-3" severity="high">
+      <issue>Must use git mv, not mv, for file relocations</issue>
+      <reason>Preserves git history, shows as "moved" not "deleted+created"</reason>
+      <correct-action>git mv source destination</correct-action>
+      <incorrect-action>mv source destination (loses history)</incorrect-action>
+    </gotcha>
+
+    <gotcha id="gotcha-4" severity="medium">
+      <issue>README.md likely references run_tests.sh in test instructions</issue>
+      <reason>Script moved from root to scripts/validation/</reason>
+      <correct-action>Update README test commands after Phase 2.3</correct-action>
+      <verification>grep "run_tests.sh" README.md after move</verification>
+    </gotcha>
+
+    <gotcha id="gotcha-5" severity="low">
+      <issue>whats-next.md disposition depends on content inspection</issue>
+      <reason>May be active handoff (keep in root) or stale (archive)</reason>
+      <correct-action>DevOps Agent reads file, decides based on content</correct-action>
+      <decision-criteria>Contains current work → keep; historical → archive</decision-criteria>
+    </gotcha>
+  </gotchas>
+
+  <dependencies>
+    <dependency type="external-tool">
+      <tool>git</tool>
+      <min-version>2.0</min-version>
+      <reason>git mv command with history preservation</reason>
+    </dependency>
+
+    <dependency type="external-tool">
+      <tool>tree</tool>
+      <required>false</required>
+      <reason>Directory structure visualization (optional, use ls -R as fallback)</reason>
+    </dependency>
+
+    <dependency type="reference-document">
+      <document>/srv/projects/instructor-workflow/docs/architecture/repo-reorg-plan.md</document>
+      <sections>Phases 1-3, Section B (Target Structure)</sections>
+    </dependency>
+
+    <dependency type="reference-document">
+      <document>/srv/projects/instructor-workflow/docs/.scratch/research-system-audit/q1-git-script-analysis.md</document>
+      <sections>Q1 Resolution, Recommendation: Option D</sections>
+    </dependency>
+  </dependencies>
+
+  <estimated-timeline>
+    <phase-1>30 minutes (directory creation + verification)</phase-1>
+    <phase-2>90 minutes (30+ file moves + reference checks + 4 commits)</phase-2>
+    <phase-3>30 minutes (documentation moves + decision on whats-next.md)</phase-3>
+    <validation>30 minutes (post-migration checks + test execution)</validation>
+    <total>2.5-3 hours</total>
+  </estimated-timeline>
+
+  <next-steps-after-completion>
+    <step id="next-1">
+      <action>Update .project-context.md</action>
+      <details>Reflect new directory structure in "Documentation Locations" section</details>
+    </step>
+
+    <step id="next-2">
+      <action>Create ADR documenting reorganization decision</action>
+      <file-path>docs/architecture/adr/001-repository-reorganization.md</file-path>
+    </step>
+
+    <step id="next-3">
+      <action>Create scripts/README.md</action>
+      <details>Document script categories and usage (see Appendix B in repo-reorg-plan.md)</details>
+    </step>
+
+    <step id="next-4">
+      <action>Update README.md test instructions</action>
+      <details>Change paths from ./run_tests.sh to scripts/validation/run_tests.sh</details>
+    </step>
+
+    <step id="next-5">
+      <action>Create completion report</action>
+      <file-path>docs/.scratch/repo-reorg/completion-report.md</file-path>
+      <details>Document actual vs estimated time, issues encountered, success criteria met</details>
+    </step>
+  </next-steps-after-completion>
+
+  <communication-points>
+    <checkpoint id="cp-1" phase="before-start">
+      <notify>Planning Agent</notify>
+      <message>Beginning Phases 1-3 execution. Pre-migration safety steps complete.</message>
+      <includes>Git tag name for rollback</includes>
+    </checkpoint>
+
+    <checkpoint id="cp-2" phase="after-phase-1">
+      <notify>Planning Agent</notify>
+      <message>Phase 1 complete - directory structure created. Proceeding to Phase 2.</message>
+      <includes>tree output showing new directories</includes>
+    </checkpoint>
+
+    <checkpoint id="cp-3" phase="after-phase-2">
+      <notify>Planning Agent</notify>
+      <message>Phase 2 complete - utilities moved. Proceeding to Phase 3.</message>
+      <includes>Count of files moved, any reference updates needed</includes>
+    </checkpoint>
+
+    <checkpoint id="cp-4" phase="completion">
+      <notify>Planning Agent</notify>
+      <message>Phases 1-3 COMPLETE. Repository reorganized successfully.</message>
+      <includes>Validation results, next steps for Phases 4-5</includes>
+    </checkpoint>
+
+    <checkpoint id="cp-error" phase="on-error">
+      <notify>Planning Agent</notify>
+      <message>ERROR during Phase X. Migration halted.</message>
+      <includes>Error details, rollback recommendation, current state</includes>
+    </checkpoint>
+  </communication-points>
+</implementation-story>

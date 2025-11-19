@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<agent_request xmlns="http://instructor-workflow.org/agent-handoff/v1">
+  <mode>invalid-mode</mode>
+  <original_intent>Test schema validation catches invalid enum value</original_intent>
+  <current_task_summary>This should fail validation</current_task_summary>
+  <workflow>standard</workflow>
+  <task_details>Testing error detection</task_details>
+  <deliverables>
+    <file path="result.json">Test result</file>
+  </deliverables>
+</agent_request>

@@ -1,0 +1,9 @@
+{
+  "session_id": "6933cee8-32e6-40e5-a117-477c4167e1e2",
+  "prompts": [
+    "https://github.com/ailabs-393/ai-labs-claude-skills\n\n  [Pasted text #1 +37 lines]\n\n  //\n\n  Can you please add these skills to this project's skills folder?",
+    "/t_metaprompt_workflow ",
+    "/create-prompt "
+  ],
+  "agent_name": "CodeWeaver"
+}

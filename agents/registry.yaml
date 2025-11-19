@@ -309,9 +309,9 @@ agents:
       - Grep
       - WebSearch
       - WebFetch
-      - mcp__ref__*
-      - mcp__exasearch__*
-      - mcp__perplexity-ask__*
+      - mcp__ref
+      - mcp__exasearch
+      - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
       - src/**
@@ -400,14 +400,14 @@ agents:
       - Task
       - TodoWrite
       - SlashCommand
-      - mcp__linear-server__*
-      - mcp__github__*
-      - mcp__supabase__*
-      - mcp__ref__*
-      - mcp__exasearch__*
-      - mcp__perplexity-ask__*
-      - mcp__claude-reviewer__*
-      - mcp__chrome-devtools__*
+      - mcp__linear-server
+      - mcp__github
+      - mcp__supabase
+      - mcp__ref
+      - mcp__exasearch
+      - mcp__perplexity-ask
+      - mcp__claude-reviewer
+      - mcp__chrome-devtools
     delegates_to:
       - backend-agent
       - browser-agent
@@ -500,9 +500,9 @@ agents:
       - Grep
       - WebSearch
       - WebFetch
-      - mcp__ref__*
-      - mcp__exasearch__*
-      - mcp__perplexity-ask__*
+      - mcp__ref
+      - mcp__exasearch
+      - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
       - src/**
@@ -561,9 +561,9 @@ agents:
       - Grep
       - WebSearch
       - WebFetch
-      - mcp__ref__*
-      - mcp__exasearch__*
-      - mcp__perplexity-ask__*
+      - mcp__ref
+      - mcp__exasearch
+      - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
       - src/**
@@ -734,7 +734,7 @@ agents:
       - Glob
       - Grep
       - WebFetch
-      - mcp__ref__*
+      - mcp__ref
     delegates_to: []
     cannot_access:
       - tests/**
@@ -763,7 +763,7 @@ agents:
       - Glob
       - Grep
       - WebFetch
-      - mcp__ref__*
+      - mcp__ref
     delegates_to: []
     cannot_access:
       - tests/**

@@ -20,7 +20,7 @@ This specification defines a production-ready mem0 (OpenMemory) agent following 
 **Integration Points**:
 - Qdrant vector database (backend storage on Workhorse)
 - OpenAI API (embedding generation: text-embedding-3-small, LLM: gpt-4)
-- MCP tools (mcp__openmemory__* for memory operations)
+- MCP tools (mcp__openmemory for memory operations)
 - TEF agents (memory persistence for all agents)
 - vLLM (local LLM alternative for self-hosted deployments)
 

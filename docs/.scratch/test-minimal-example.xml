@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<agent_request xmlns="http://instructor-workflow.org/agent-handoff/v1">
+  <mode>spawn</mode>
+  <original_intent>Test minimal valid XML handoff</original_intent>
+  <current_task_summary>Validate schema accepts minimal required fields</current_task_summary>
+  <workflow>standard</workflow>
+  <task_details>This is a minimal example with only required fields populated.</task_details>
+  <deliverables>
+    <file path="docs/.scratch/result.json">Minimal deliverable example</file>
+  </deliverables>
+</agent_request>

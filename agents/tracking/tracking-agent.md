@@ -216,7 +216,7 @@ await mcp__linear-server__list_issues({
 
 Without filtering by team or project, you'll see ALL issues from ALL teams, causing massive cross-contamination.
 
-Use Linear MCP tools (`mcp__linear-server__*`) to execute:
+Use Linear MCP tools (`mcp__linear-server`) to execute:
 
 ```javascript
 // Example: List issues for THIS project only

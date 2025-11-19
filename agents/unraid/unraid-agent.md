@@ -1,7 +1,7 @@
 ---
 name: unraid-agent
 description: Unraid NAS system specialist managing array operations, Docker containers, VMs, cache pools, parity checks, and storage configuration. Expert in filesystem maintenance (XFS/BTRFS/ZFS), hardware setup (HBA mode, ECC RAM), security hardening, backup strategies, and performance tuning. Use for Unraid server management, troubleshooting, array expansion, disk replacement, plugin management, network configuration, and system optimization. Validates all operations against official Unraid documentation (docs.unraid.net) for versions 6.11-7.2+.
-tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, mcp__ref__*
+tools: Read, Write, Edit, Bash, Glob, Grep, WebFetch, mcp__ref
 model: sonnet
 ---
 

@@ -1,0 +1,10 @@
+{
+  "summary": "Test architecture cleanup complete: 8 xfail markers document Layer 2/3 separation per ADR-005. Added monitoring script for architectural drift detection and comprehensive README documenting test strategy.",
+  "focus_areas": [
+    "xfail marker correctness and strict=False rationale",
+    "ADR-005 documentation quality and architectural reasoning",
+    "monitor_xpass.sh robustness for CI integration",
+    "README clarity for new developers understanding test patterns"
+  ],
+  "test_command": "python3 -m pytest scripts/test_injection_validators.py -v"
+}

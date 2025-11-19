@@ -1,0 +1,193 @@
+{
+  "skill_name": "command-creator",
+  "skill_path": "/srv/projects/instructor-workflow/skills/command-creator",
+  "test_version": "1.0",
+  "description": "Test cases for command-creator skill - validates command creation, validation, and symlink management",
+  "unit_tests": [
+    {
+      "name": "Test create_command.py - Simple command creation",
+      "type": "script",
+      "script": "create_command.py",
+      "args": [
+        "test-simple-cmd",
+        "Test command for unit testing",
+        "--output-dir",
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/outputs"
+      ],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Created command"
+      },
+      "description": "Verify create_command.py creates a simple command with basic frontmatter"
+    },
+    {
+      "name": "Test create_command.py - Command with subdirectory",
+      "type": "script",
+      "script": "create_command.py",
+      "args": [
+        "test-subdir-cmd",
+        "Test command in subdirectory",
+        "--output-dir",
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/outputs",
+        "--subdirectory",
+        "test-subdir"
+      ],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Created command"
+      },
+      "description": "Verify create_command.py creates commands in subdirectories"
+    },
+    {
+      "name": "Test create_command.py - Command with arguments",
+      "type": "script",
+      "script": "create_command.py",
+      "args": [
+        "test-args-cmd",
+        "Test command with argument hints",
+        "--output-dir",
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/outputs",
+        "--argument-hint",
+        "[pr-number] [priority]"
+      ],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Arguments:"
+      },
+      "description": "Verify create_command.py adds argument hints to frontmatter"
+    },
+    {
+      "name": "Test create_command.py - Command with allowed-tools",
+      "type": "script",
+      "script": "create_command.py",
+      "args": [
+        "test-tools-cmd",
+        "Test command with allowed tools",
+        "--output-dir",
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/outputs",
+        "--allowed-tools",
+        "Bash(git:*), Bash(ls:*)"
+      ],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Created command"
+      },
+      "description": "Verify create_command.py adds allowed-tools to frontmatter"
+    },
+    {
+      "name": "Test validate_command.py - Valid command file",
+      "type": "script",
+      "script": "validate_command.py",
+      "args": [
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/fixtures/valid-command.md"
+      ],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "✅"
+      },
+      "description": "Verify validate_command.py accepts valid command files"
+    },
+    {
+      "name": "Test validate_command.py - Missing frontmatter",
+      "type": "script",
+      "script": "validate_command.py",
+      "args": [
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/fixtures/invalid-no-frontmatter.md"
+      ],
+      "expected_exit_code": 1,
+      "expected_output": {
+        "contains": "Missing YAML frontmatter"
+      },
+      "description": "Verify validate_command.py rejects commands without frontmatter"
+    },
+    {
+      "name": "Test validate_command.py - Missing description",
+      "type": "script",
+      "script": "validate_command.py",
+      "args": [
+        "/srv/projects/instructor-workflow/skills/command-creator/tests/fixtures/invalid-no-desc.md"
+      ],
+      "expected_exit_code": 1,
+      "expected_output": {
+        "contains": "Missing required field: description"
+      },
+      "description": "Verify validate_command.py requires description field"
+    }
+  ],
+  "integration_tests": [
+    {
+      "name": "Test complete command creation workflow",
+      "type": "workflow",
+      "description": "End-to-end test: create command, validate it, verify structure",
+      "steps": [
+        {
+          "action": "Create test command",
+          "command": "python3 scripts/create_command.py test-workflow-cmd 'Workflow test command' --output-dir tests/outputs --argument-hint '[task-id]' --allowed-tools 'Bash(git:*)'"
+        },
+        {
+          "action": "Validate created command",
+          "command": "python3 scripts/validate_command.py tests/outputs/test-workflow-cmd.md"
+        },
+        {
+          "action": "Verify file structure",
+          "command": "test -f tests/outputs/test-workflow-cmd.md && grep -q 'description: Workflow test command' tests/outputs/test-workflow-cmd.md"
+        }
+      ],
+      "expected_result": "All steps complete successfully with exit code 0"
+    },
+    {
+      "name": "Test command creation with all optional parameters",
+      "type": "workflow",
+      "description": "Create command with all frontmatter options and validate",
+      "steps": [
+        {
+          "action": "Create comprehensive command",
+          "command": "python3 scripts/create_command.py test-full-cmd 'Full featured command' --output-dir tests/outputs --subdirectory comprehensive --argument-hint '[file] [option]' --allowed-tools 'Bash(cat:*), Bash(jq:*)' --model 'claude-sonnet-4'"
+        },
+        {
+          "action": "Validate comprehensive command",
+          "command": "python3 scripts/validate_command.py tests/outputs/comprehensive/test-full-cmd.md"
+        }
+      ],
+      "expected_result": "Command created with all optional parameters validated successfully"
+    }
+  ],
+  "regression_tests": [
+    {
+      "name": "Regression: Command frontmatter format consistency",
+      "description": "Ensure command files maintain consistent YAML frontmatter format",
+      "type": "baseline",
+      "steps": [
+        {
+          "action": "Create baseline command",
+          "command": "python3 scripts/create_command.py regression-test-cmd 'Regression test command' --output-dir tests/outputs --argument-hint '[input]'"
+        }
+      ],
+      "baseline_file": "baselines/command-frontmatter-format.txt",
+      "validation_method": "structural_match",
+      "notes": "Validates that frontmatter structure (YAML format, field ordering) remains consistent. Update baseline only when intentionally changing format."
+    },
+    {
+      "name": "Regression: Validation error messages",
+      "description": "Ensure validation error messages remain helpful and consistent",
+      "type": "baseline",
+      "steps": [
+        {
+          "action": "Run validation on invalid file",
+          "command": "python3 scripts/validate_command.py tests/fixtures/invalid-no-desc.md"
+        }
+      ],
+      "baseline_file": "baselines/validation-error-format.txt",
+      "validation_method": "contains",
+      "notes": "Ensures validation error messages remain clear and actionable. Update baseline only when improving error messages."
+    }
+  ],
+  "_instructions": {
+    "unit_tests": "Test individual scripts (create_command.py, validate_command.py) in isolation with various inputs",
+    "integration_tests": "Test complete workflows: create → validate → verify structure",
+    "regression_tests": "Compare outputs against known baselines to catch format or behavior changes",
+    "setup": "Fixture files in tests/fixtures/ are pre-created for validation tests",
+    "cleanup": "Manually run: rm -rf /srv/projects/instructor-workflow/skills/command-creator/tests/outputs/*",
+    "howto": "Run with: python3 /srv/projects/instructor-workflow/skills/skill-testing-framework/scripts/run_tests.py /srv/projects/instructor-workflow/skills/command-creator/tests/command-creator-tests.json --skill-path /srv/projects/instructor-workflow/skills/command-creator"
+  }
+}

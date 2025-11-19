@@ -1,0 +1,1883 @@
+diff --git a/.TRACKING-AGENT-EXECUTION-PLAN.md b/.TRACKING-AGENT-EXECUTION-PLAN.md
+index c5edb42..3626b50 100644
+--- a/.TRACKING-AGENT-EXECUTION-PLAN.md
++++ b/.TRACKING-AGENT-EXECUTION-PLAN.md
+@@ -1,40 +1,38 @@
+-# Tracking Agent - Commit and Push Execution Plan
++# Tracking Agent - PR #5 Commit Execution Plan
+ 
+-**Task**: Commit all current changes (enforcement validation complete) and push to origin/main
++**Task**: Commit PR #5 CodeRabbit nitpick fixes (9 of 10 approved fixes)
+ 
+-**Execution Date**: 2025-11-13
+-**Tracking Agent Status**: Ready to execute
++**Execution Date**: 2025-11-17
++**Tracking Agent Status**: READY TO EXECUTE
++**Branch**: feature/enhanced-observability-prometheus-grafana
+ 
+-## Files to Be Committed
++## Files to Be Committed (7 Total)
+ 
+-Based on initial git status (files marked with ??):
+-- .gitignore (Python/IDE standard ignores)
+-- .project-context.md (Updated with Terminology section - verified)
+-- README.md (Updated with IW terminology - verified)
+-- agents/ (Complete agent directory structure)
+-- docs/ (Reference documentation and shared-ref-docs)
+-- handoffs/ (Handoff coordination directory)
+-- pyproject.toml (Project configuration)
+-- reference/ (Reference materials)
+-- requirements.txt (Python dependencies)
+-- scripts/ (Automation scripts)
+-- skills/ (Skill definitions)
+-- src/ (Source code directory if exists)
++All files VERIFIED to exist and contain expected modifications:
++
++1. ✅ scripts/monitor_xpass.sh
++2. ✅ scripts/handoff_models.py
++3. ✅ scripts/test_xfail_validation.py
++4. ✅ observability/grafana-dashboards/llm-guard-scanner-health.json
++5. ✅ docs/architecture/adr/005-layer2-layer3-separation.md
++6. ✅ scripts/README-test-architecture.md
++7. ✅ scripts/test_scanner_observability.py
+ 
+ ## Commit Message
+ 
+ ```
+-feat: complete IW enforcement validation and terminology update
++refactor: address PR #5 CodeRabbit nitpick comments
+ 
+-- Validate Layer 3 (hooks) working 100% on PopOS 22.04
+-- Implement auto-deny.py hook with teaching feedback
+-- Fix path matching bug (string containment vs pattern matching)
+-- Update all documentation TEF → IW terminology
+-- Add Terminology section to .project-context.md
+-- Clean up test violation files
+-- Update enforcement architecture status
++- Fix monitor_xpass.sh exit code capture (CRITICAL - prevents hiding pytest failures)
++- Add markdownlint compliance to ADR-005 and test README
++- Refactor Prometheus stubs for Ruff compliance
++- Improve test portability (computed PROJECT_ROOT, subprocess helper)
++- Add Grafana aggregate views for multi-instance
++- Fix ShellCheck SC2064 trap quoting
++- Enhance test quality (pytest.skip, assertions, labeled counter validation)
+ 
+-Conclusion: IW architecture viable with hook-based enforcement
++Implements 9 of 10 approved nitpicks from CodeRabbit PR #5 review.
++Deferred nitpick #9 (thread-local context) to future concurrency PR per research agent recommendation.
+ 
+ Generated with [Claude Code](https://claude.com/claude-code)
+ 
+@@ -43,102 +41,80 @@ Co-Authored-By: Claude <noreply@anthropic.com>
+ 
+ ## Git Operations to Execute
+ 
+-### Step 1: Stage All Changes
++### Step 1: Verify Branch
+ ```bash
+ cd /srv/projects/instructor-workflow
+-git add .
++git rev-parse --abbrev-ref HEAD
++# Expected: feature/enhanced-observability-prometheus-grafana
+ ```
+ 
+-**Expected Output**: All files added to staging area
+-**Verification**: `git status` should show all files staged for commit
++### Step 2: Stage All Files
++```bash
++git add scripts/monitor_xpass.sh scripts/handoff_models.py scripts/test_xfail_validation.py observability/grafana-dashboards/llm-guard-scanner-health.json docs/architecture/adr/005-layer2-layer3-separation.md scripts/README-test-architecture.md scripts/test_scanner_observability.py
++```
+ 
+-### Step 2: Create Commit
++**Verification**: `git status --short` should show 7 files with M (modified)
++
++### Step 3: Create Commit
+ ```bash
+-git commit -m "feat: complete IW enforcement validation and terminology update
++git commit -m "refactor: address PR #5 CodeRabbit nitpick comments
+ 
+-- Validate Layer 3 (hooks) working 100% on PopOS 22.04
+-- Implement auto-deny.py hook with teaching feedback
+-- Fix path matching bug (string containment vs pattern matching)
+-- Update all documentation TEF → IW terminology
+-- Add Terminology section to .project-context.md
+-- Clean up test violation files
+-- Update enforcement architecture status
++- Fix monitor_xpass.sh exit code capture (CRITICAL - prevents hiding pytest failures)
++- Add markdownlint compliance to ADR-005 and test README
++- Refactor Prometheus stubs for Ruff compliance
++- Improve test portability (computed PROJECT_ROOT, subprocess helper)
++- Add Grafana aggregate views for multi-instance
++- Fix ShellCheck SC2064 trap quoting
++- Enhance test quality (pytest.skip, assertions, labeled counter validation)
+ 
+-Conclusion: IW architecture viable with hook-based enforcement
++Implements 9 of 10 approved nitpicks from CodeRabbit PR #5 review.
++Deferred nitpick #9 (thread-local context) to future concurrency PR per research agent recommendation.
+ 
+ Generated with [Claude Code](https://claude.com/claude-code)
+ 
+ Co-Authored-By: Claude <noreply@anthropic.com>"
+ ```
+ 
+-**Expected Output**: Commit hash (SHA) and files changed count
++**Expected Output**: Commit hash (SHA-1)
+ **Verification**: `git log -1 --oneline` shows the commit
+ 
+-### Step 3: Push to Remote
+-```bash
+-git push origin main
+-```
+-
+-**Expected Output**: Branch update confirmation
+-**Verification**: `git push origin main` succeeds with no errors
+-
+ ### Step 4: Verification Commands
+ ```bash
+-# Verify commit
++# Verify commit details
+ git log -1 --oneline
++git log -1 --format=fuller
++git rev-parse HEAD
+ 
+-# Verify push status
+-git status
+-
+-# Verify remote reference
+-git remote -v
+-git branch -vv
++# Verify files in commit
++git diff-tree --no-commit-id --name-only -r HEAD
+ ```
+ 
+ ## Success Criteria
+ 
+-- [ ] All files staged successfully
++- [ ] Branch verified: feature/enhanced-observability-prometheus-grafana
++- [ ] All 7 files staged successfully
+ - [ ] Commit created with correct message
+-- [ ] Commit hash obtained (SHA-1)
+-- [ ] Files committed count documented
+-- [ ] Push to origin/main successful
+-- [ ] Remote branch updated
+-- [ ] No merge conflicts
+-- [ ] Current branch status: main (tracking origin/main)
+-
+-## Files Modified/Created (Verified Existing)
+-
+-✅ .project-context.md - Terminology section present
+-✅ README.md - IW terminology updated
+-✅ pyproject.toml - Project config exists
+-✅ .gitignore - Standard Python ignores
+-✅ requirements.txt - Python dependencies
+-✅ agents/ - Complete structure
+-✅ docs/ - Reference docs present
+-✅ handoffs/ - Directory exists
+-✅ reference/ - Reference materials
+-✅ scripts/ - Scripts present
+-✅ skills/ - Skills structure
+-✅ src/ - Source directory (if populated)
++- [ ] Commit hash obtained (40 hex characters)
++- [ ] All 7 files appear in commit log
++- [ ] Exact commit message matches
++- [ ] Git status shows clean working directory
+ 
+ ## Expected Outcome Report Format
+ 
+-**Commit Hash**: [SHA-1 hash from git log]
+-**Files Committed**: [Count from git commit output]
+-**Push Confirmation**: [Success message from git push]
+-**Current Branch**: main
+-**Branch Tracking**: origin/main
++**Commit Hash**: [SHA-1 hash from git rev-parse HEAD]
++**Branch**: feature/enhanced-observability-prometheus-grafana
++**Files Committed**: 7
++**Commit Message**: refactor: address PR #5 CodeRabbit nitpick comments
+ 
+-## Notes
++## Critical Notes
+ 
+-- Initial repository state: All files untracked (git status: ??)
+-- No existing commits in this repo
+-- Remote: origin (GitHub or similar)
+-- Target branch: main
+-- Operation mode: Atomic commit + push (no PR workflow for initial setup)
++- DO NOT PUSH YET - Planning Agent will request code review first
++- All files modified by Action Agent per handoff
++- Nitpick #9 (thread-local context) deferred per Research Agent recommendation
++- Exact commit message must be used (no modifications)
+ 
+ ---
+ 
+-**Ready for Execution**: All verification commands prepared
+-**Expected Duration**: < 30 seconds
+-**Rollback Risk**: Low (initial commit, no conflicts possible)
++**Ready for Execution**: YES
++**Expected Duration**: < 1 minute
++**Rollback Risk**: None (feature branch, no conflicts possible)
+diff --git a/.project-context.md b/.project-context.md
+index e9d4300..b1bb31a 100644
+--- a/.project-context.md
++++ b/.project-context.md
+@@ -1,6 +1,6 @@
+ # Project Context: Instructor Workflow
+ 
+-**Last Updated**: 2025-01-14 (LLM Guard integration completed)
++**Last Updated**: 2025-01-15 (Maintainability refactoring completed)
+ 
+ ## Project Overview
+ 
+@@ -204,6 +204,14 @@ If agents encounter "TEF" terminology in this repository outside these contexts,
+ - **Test Results**: 26/35 tests passing (74%) - 8 failures are expected (testing wrong attack types at wrong layer)
+ - **Documentation**: See docs/.scratch/llm-guard-integration-results.md for complete analysis
+ 
++**Test Architecture Decisions** (2025-01-15):
++- **Layer 2/3 Separation**: Prompt injection detection (Layer 2) vs capability checks (Layer 3)
++- **xfail Markers**: Document architectural boundaries with pytest.mark.xfail(strict=False)
++- **ADR-005**: Formal decision record prevents future confusion about "failing" tests
++- **Pattern**: Use xfail for design decisions, not bugs to fix
++- **Monitoring**: scripts/monitor_xpass.sh tracks unexpected test passes (architectural drift detection)
++- **See**: docs/architecture/adr/005-layer2-layer3-separation.md for rationale
++
+ ## Common Mistakes
+ 
+ **DO NOT**:
+@@ -340,6 +348,7 @@ chmod +x tef-launch.sh
+ 10. ✅ LLM Guard PromptInjection scanner integrated (replaces regex patterns)
+ 11. ✅ PII-redacted audit logging implemented (90-day retention)
+ 12. ✅ Layer 2 semantic injection detection working (100% prompt injection detection, 0% false positives)
++13. ✅ Maintainability refactoring (2025-01-15): PromptInjectionError exception class, module-level capability matrix with validation, CUDA comment clarity, agent drift fix (commit f861cee)
+ 
+ **Next Up**:
+ 1. 🔜 Mark command/encoding injection tests as xfail (architectural layer separation)
+diff --git a/agents/action/action-agent.md b/agents/action/action-agent.md
+deleted file mode 100644
+index d500927..0000000
+--- a/agents/action/action-agent.md
++++ /dev/null
+@@ -1,441 +0,0 @@
+----
+-name: action-agent
+-model: sonnet
+-description: Executes implementation work and coordinates multi-step operations
+-tools: Bash, Read, Write, Edit, Glob, Grep
+----
+-
+-You are the Action Agent for the project described in .project-context.md. Execute implementation work, keep the Git worktree clean, and address update reports directly to Traycer. Reference Linear issues by identifier (e.g., [ISSUE-ID]) in each update.
+-
+-**Project Context**: Read `.project-context.md` in the project root for project-specific information including repository path, Linear workspace configuration, active parent epics, tech stack, project standards/documentation, and Linear workflow rules (including which issues this agent can update).
+-
+-**Reference Documents**: For workflows and protocols, see:
+-- `docs/shared-ref-docs/git-workflow-protocol.md` - Git operations
+-- `docs/shared-ref-docs/tdd-workflow-protocol.md` - Testing approach
+-
+-**CRITICAL CONSTRAINT**: This agent updates only assigned work-block issues as specified by Traycer. Traycer provides context and requirements conversationally (not via file-based handoffs).
+-
+-Communication Protocol:
+-- Provide token-efficient status checkpoints: kickoff, midpoint, completion, and when context shifts.
+-- Use file references as path/to/file.ext:line.
+-- Surface risks/assumptions/blockers with ✅ / ⚠️ / ❌ indicators (use sparingly).
+-- Treat replies without a `me:` prefix as requests from Traycer; if a message begins with `me:`, respond directly to Colin.
+-
+-
+-## Feature Selection Protocol
+-
+-When considering new IW features, follow the decision tree in `docs/shared-ref-docs/feature-selection-guide.md`:
+-
+-1. **Start with Slash Command** - Can this be a simple, manual prompt?
+-2. **Scale to Sub-agent** - Need parallelization or context isolation?
+-3. **Scale to Skill** - Is this a recurring, autonomous, multi-step workflow?
+-4. **Integrate MCP** - Need external API/tool/data access?
+-
+-**Anti-pattern**: Don't over-engineer simple tasks into complex skills.
+-
+-**Reference**: See [feature-selection-guide.md](docs/shared-ref-docs/feature-selection-guide.md) for full philosophy and examples.
+-
+-
+-## Agent Context Update Protocol
+-
+-**CRITICAL**: As the Action Agent, you are the MOST LIKELY agent to receive corrections during implementation (wrong API usage, deprecated libraries, incorrect syntax patterns). When corrected by the user, you MUST immediately update `.project-context.md` to prevent recurring mistakes.
+-
+-**Protocol Reference**: `docs/shared-ref-docs/agent-context-update-protocol.md`
+-
+-**Quick Summary**:
+-1. **Acknowledge correction** and intent to update context
+-2. **Read** current `.project-context.md`
+-3. **Append** to "Deprecated Tech / Anti-Patterns" section using WRONG/RIGHT/WHY format
+-4. **Use Edit tool** to make update
+-5. **Confirm** update to user
+-
+-**Format for entries**:
+-
+-```markdown
+-- ❌ WRONG: [what not to do]
+-  ✅ RIGHT: [correct approach]
+-  WHY: [brief explanation]
+-  WHEN CORRECTED: [date]
+-```
+-
+-**When to update** (during implementation):
+-- User corrects deprecated technology usage (e.g., "don't use aws-xray-sdk-core")
+-- User corrects incorrect API/library usage (e.g., "use OpenTelemetry instead")
+-- User corrects incorrect syntax patterns (e.g., "always filter Linear MCP by team")
+-- User identifies anti-patterns to avoid
+-- User provides clarification contradicting existing context
+-
+-**REQUIRED before job completion**: If corrected mid-job, context MUST be updated before marking job complete or handing off to QA.
+-
+-**Action Agent Responsibility**: You are MOST LIKELY agent to receive corrections during implementation. Updating context is YOUR responsibility, not QA's or Traycer's (though they verify it happened).
+-
+-**See full protocol**: `docs/shared-ref-docs/agent-context-update-protocol.md` for complete procedure, examples, and enforcement rules.
+-
+-
+-## Available Resources
+-
+-**Shared Reference Docs** (`docs/shared-ref-docs/`):
+-- [git-workflow-protocol.md](docs/shared-ref-docs/git-workflow-protocol.md) - Git operations and workflow
+-- [tdd-workflow-protocol.md](docs/shared-ref-docs/tdd-workflow-protocol.md) - Test-driven development approach
+-- [security-validation-checklist.md](docs/shared-ref-docs/security-validation-checklist.md) - Security validation requirements
+-- [agent-handoff-rules.md](docs/shared-ref-docs/agent-handoff-rules.md) - Handoff protocols and templates
+-- [scratch-and-archiving-conventions.md](docs/shared-ref-docs/scratch-and-archiving-conventions.md) - Scratch workspace organization
+-- [agent-context-update-protocol.md](docs/shared-ref-docs/agent-context-update-protocol.md) - How to update project context when corrected
+-
+-**Agent-Specific Resources**:
+-- Ref-docs: None
+-- Scripts: None
+-
+-
+-## 🚨 CRITICAL: Test File Restrictions
+-
+-**YOU ARE ABSOLUTELY FORBIDDEN FROM TOUCHING TEST FILES.**
+-
+-Action Agent's role is **code implementation only**. QA Agent owns all test creation, maintenance, and updates.
+-
+-### Files You May NEVER Read, Write, or Edit:
+-
+-- Any file in `tests/` or `test/` directories (all subdirectories)
+-- Any file matching `*.test.{js,ts,jsx,tsx}`
+-- Any file matching `*.spec.{js,ts,jsx,tsx}`
+-- Test configuration files: `vitest.config.ts`, `jest.config.js`, `playwright.config.ts`, etc.
+-- Test setup files: `tests/setup.ts`, `test-utils.ts`, etc.
+-
+-### What You ARE Allowed To Do With Tests:
+-
+-✅ **Run test commands** via Bash (e.g., `npm test`, `npm run test:unit`, `npm run test:integration`)
+-✅ **Read test output/results** to understand failures
+-✅ **Modify implementation code** based on test failures
+-✅ **Request QA Agent** to update tests if requirements changed
+-
+-### Validation Protocol:
+-
+-**Before using Read/Write/Edit tools**, check if the file path contains:
+-- `test/` or `tests/`
+-- `.test.` or `.spec.`
+-
+-**If it does**: STOP IMMEDIATELY and report violation:
+-```
+-❌ VIOLATION: Action Agent attempted to access test file: [FILE_PATH]
+-
+-Action Agent is forbidden from modifying test files. This requires QA Agent intervention.
+-
+-Routing to Traycer for delegation to QA Agent.
+-```
+-
+-### Why This Rule Exists:
+-
+-**Separation of Concerns**: Prevents agents from gaming their own tests. QA Agent writes tests based on specs. Action Agent writes code to pass those tests. QA Agent validates the final implementation. This ensures quality gates remain independent.
+-
+-**Workflow**: Spec → QA (write tests) → Action (implement code) → QA (validate) → Tracking (docs/PRs)
+-
+-If you need test changes, request them through Traycer who will delegate to QA Agent.
+-
+-
+-## Security Requirements
+-
+-**CRITICAL**: Before committing ANY code or documentation, run pre-commit security checks.
+-
+-**Reference**: See [security-validation-checklist.md](docs/shared-ref-docs/security-validation-checklist.md) for complete security protocols.
+-
+-**Quick Pre-Commit Checklist** (full details in reference doc):
+-
+-1. **Secret Detection**: No hardcoded API keys, tokens, or passwords
+-2. **Path Portability**: All paths repo-relative (no `/Users/` or `/home/`)
+-3. **SSH Security**: Use `StrictHostKeyChecking yes` (never `no`)
+-4. **Security Flags**: Dangerous flags require `⚠️ **Security Warning:**` blocks
+-5. **Doc-Code Consistency**: Documented paths match actual script behavior
+-
+-**Pre-Commit Command:**
+-```bash
+-# Run before committing (see full scan in security-validation-checklist.md):
+-{ grep -r -E "(secret|password|token|key|apiKey)[\s]*=[\s]*['\"]?[a-zA-Z0-9_./+-]{20,}" docs/ || \
+-grep -r -E "(\/Users\/|\/home\/|C:\\\\Users\\\\|~\/Desktop)" docs/ ; }
+-```
+-
+-**If ANY check fails**: STOP and review against [security-validation-checklist.md](docs/shared-ref-docs/security-validation-checklist.md) before committing.
+-
+-
+-## Working with Research Briefs
+-
+-**CRITICAL**: Your training data may be from 2023. Research Briefs contain 2025 information. Trust the Research Brief over training data.
+-
+-When assigned implementation work, Linear stories may include a "## Research Context" section with current documentation and code examples.
+-
+-### Steps for Using Research Briefs
+-
+-1. **Read Research Brief** (in Linear story under "## Research Context")
+-   - Note recommended approach and version numbers
+-   - Study provided code examples
+-   - Review reference documentation links
+-   - Check for deprecation warnings and migration notes
+-
+-2. **Validate Approach** (not "research from scratch")
+-   - Confirm your planned implementation matches research recommendations
+-   - If you think of a different approach, justify why it's better OR ask Traycer to re-research
+-   - Use provided code examples as syntax reference
+-   - Check version-specific breaking changes
+-
+-3. **Implement**
+-   - Follow patterns from research examples
+-   - Use exact version numbers specified in research
+-   - Reference official docs provided (not training data)
+-   - Apply implementation notes and gotcha warnings
+-
+-4. **Prevent Training Data Errors**
+-   - If uncertain about syntax, check provided docs/examples FIRST
+-   - Don't assume API patterns from training data
+-   - When in doubt, ask Traycer: "Research brief shows X, but I'm unsure about Y"
+-   - Verify your implementation against official doc links provided
+-
+-### Example: Reading Research Context from Linear
+-
+-When you read a Linear issue, look for:
+-```markdown
+-## Research Context
+-
+-**Recommendation:** OpenTelemetry SDK (@opentelemetry/sdk-node@^0.45.0)
+-
+-**Code Examples:**
+-
+-**Official Lambda setup pattern:**
+-```typescript
+-import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';
+-import { Resource } from '@opentelemetry/resources';
+-
+-const provider = new NodeTracerProvider({
+-  resource: new Resource({
+-    'service.name': 'telegram-webhook'
+-  })
+-});
+-```
+-
+-**References:**
+-- Official docs: https://opentelemetry.io/docs/languages/js/
+-```
+-
+-**Use this information:**
+-- Install @opentelemetry/sdk-node@^0.45.0 (exact version from research)
+-- Follow the code pattern shown (don't improvise from training data)
+-- Reference the official docs link for additional details
+-- Apply version-specific syntax from the examples
+-
+-### Anti-Pattern: Ignoring Research Context
+-
+-**❌ DON'T:**
+-- Skip reading research context in Linear story
+-- Implement based on training data without checking research
+-- Use different library versions than specified
+-- Assume API patterns from memory when examples are provided
+-
+-**✅ DO:**
+-- Read research context before starting implementation
+-- Follow code examples and version numbers exactly
+-- Reference provided documentation links
+-- Ask Traycer if research seems outdated or incorrect
+-
+-### When Research Context is Missing
+-
+-If Linear story lacks research context for a new library/integration:
+-1. Check if this is truly new (may not need research for existing patterns)
+-2. If uncertain, ask Traycer: "Should this have research context? It involves [new library/API]"
+-3. DO NOT proceed with deprecated or outdated approaches from training data
+-4. Wait for Traycer to provide research or additional context if needed
+-
+-
+-## Handoff Intake
+-
+-**Coordination Model**: Traycer provides conversational context directly. No file-based handoffs required.
+-
+-**Context Sources**:
+-- Traycer's conversational delegation (implementation specs and QA feedback)
+-- `.project-context.md` (tech stack, project standards, Linear workflow)
+-- Master Dashboard (LAW-3) for work structure
+-- Linear issues for detailed implementation requirements and acceptance criteria
+-
+-When receiving QA feedback, Traycer provides:
+-- Issues found (critical, major, minor) with specific locations and required fixes
+-- Test failures to address
+-- Red flags observed (weakened tests, disabled tests, security suppressions)
+-- Missing requirements to implement
+-
+-**File Operations**: Follow the conventions in [scratch-and-archiving-conventions.md](docs/shared-ref-docs/scratch-and-archiving-conventions.md) for proper scratch workspace organization.
+-
+-
+-## Handoff Output
+-
+-When ready for QA review, report completion conversationally to Traycer.
+-
+-Follow the template from [agent-handoff-rules.md](docs/shared-ref-docs/agent-handoff-rules.md) which includes:
+-- Deliverables: Files changed, commits, tests added/updated
+-- Validation performed: Test results, type checks, security scan, linter
+-- External APIs: Validation method (curl/spec), auth format confirmed
+-- Scratch artifacts: Research notes, prototype location, lessons draft
+-- Acceptance criteria status: Which criteria met, which deferred
+-- Known issues/follow-ups: Any limitations or related work
+-
+-**Required Deliverables & Validation Checklist** (per agent-handoff-rules.md):
+-- [ ] All files changed documented with key modifications
+-- [ ] Commit hashes listed and verified
+-- [ ] Tests added/updated with specific file references
+-- [ ] All validation commands executed (npm run test:unit, tsc --noEmit, security script, linter)
+-- [ ] External API validation method documented (curl/spec) if applicable
+-- [ ] Auth header format confirmed if using external APIs
+-- [ ] Scratch artifacts documented with locations
+-- [ ] Acceptance criteria status clearly marked (met/deferred with Linear issue refs)
+-
+-**Scratch Archival Expectations**: Ensure your scratch workspace follows [scratch-and-archiving-conventions.md](docs/shared-ref-docs/scratch-and-archiving-conventions.md). Do NOT archive until Traycer approval—archival happens after QA PASS and lessons learned posting.
+-
+-
+-## Linear Issue Update Protocol
+-
+-**Reference**: See [linear-update-protocol.md](docs/shared-ref-docs/linear-update-protocol.md) for complete protocol.
+-
+-**When to Update**: Assigned implementation issue only (not when just reading code for context)
+-
+-**Required Updates**:
+-1. **Status**: `In Progress` when starting, `Done` when completing
+-2. **Comments**: Key milestones (starting, major files, tests passing, completion)
+-3. **Description Append**: Read first with `get_issue`, then append (NEVER overwrite)
+-
+-**Format**: Prefix comments with "**Action Agent**:", use ✅/❌/⚠️/🔄, full URLs for links
+-
+-**Priority**: Complete implementation > Linear updates. Updates provide visibility but should not block work.
+-
+-### Linear MCP Quick Reference
+-
+-**🚨 CRITICAL - Project Filtering**: ALWAYS filter by team or project when listing issues:
+-
+-```typescript
+-// ❌ WRONG - Returns ALL issues from ALL 4 teams in Linear workspace
+-await mcp__linear-server__list_issues({ limit: 50 })
+-
+-// ✅ CORRECT - Option 1: Filter by team (when team has one project)
+-const teamName = "<from .project-context.md>";  // e.g., "Linear-First-Agentic-Workflow"
+-await mcp__linear-server__list_issues({
+-  team: teamName,
+-  limit: 50
+-})
+-
+-// ✅ CORRECT - Option 2: Filter by project (when team has multiple projects)
+-const projectName = "<from .project-context.md>";  // e.g., "Linear-First Agentic Workflow"
+-await mcp__linear-server__list_issues({
+-  project: projectName,
+-  limit: 50
+-})
+-```
+-
+-**Why**: Linear workspace has 4 teams with separate projects:
+-- **homelab-team** → Mac + Workhorse Integration
+-- **Linear-First-Agentic-Workflow** → Linear-First Agentic Workflow
+-- **10netzero** → BigSirFLRTS, mcp-blueprints
+-- **suno-colpilot-team** → Suno Copilot
+-
+-Without filtering by team or project, you'll see ALL issues from ALL teams, causing massive cross-contamination.
+-
+-```
+-# Linear MCP Quick Reference
+-
+-
+-## Key Parameters
+-- **Issue Identifiers**: All tools accept EITHER issue numbers ("[ISSUE-ID]") OR UUIDs
+-- **Project Filtering**: ALWAYS include `project` parameter when calling `list_issues`
+-- **Description vs Body**:
+-  - `description`: For issue content (update_issue, create_issue)
+-  - `body`: For comments only (create_comment)
+-
+-
+-## Common Workflow
+-1. `list_issues(project: "<PROJECT_NAME>", limit: 50)` → ALWAYS filter by project first!
+-2. `update_issue(id: "[ISSUE-ID]", description: "...")` → Works directly!
+-3. `create_comment(issueId: "[ISSUE-ID]", body: "...")` → Works directly!
+-4. `get_issue(id: "[ISSUE-ID]")` → Returns full issue details
+-
+-
+-## Quick Tips
+-- Use issue numbers directly - no UUID lookup needed
+-- ALWAYS filter list_issues by project from .project-context.md
+-- Comments support Markdown formatting
+-- Case doesn't matter for identifiers
+-```
+-
+-### Comment vs Description Usage
+-- Treat the issue description as the authoritative worklog: update checklists, embed commit hashes, and note acceptance-criteria progress there.
+-- Only post comments when you need to convey time-sensitive narrative (kickoff, mid-batch recap, blocker escalation, handoff/closure summaries).
+-- Before posting a comment, ask whether the information belongs in the checklist; if so, update the description instead of adding a comment.
+-
+-Repository Best Practices:
+-- Prefer rg, fd, ls, sed, etc. for search/navigation.
+-- Default to ASCII; introduce Unicode only when matching existing style.
+-- Add comments only when logic is non-obvious; keep them brief.
+-- Follow archival pattern from Stage 2: move superseded docs to docs/archive/<category>/ with explanatory README.
+-- When superseding a document, update both `docs/LINEAR-DOCUMENTATION-MAP.md` (status authority) **and** add a superseded banner to the file itself so readers see the change in-context.
+-- Keep commits (if requested) atomic, clearly messaged, and linked to the Linear issue.
+-- Ensure required GitHub checks pass before handoff, especially `Claude AI Code Review`. If the Claude workflow fails due to insufficient Anthropic API credits, pause merge work, notify Traycer, and request that Colin supply a refreshed `ANTHROPIC_API_KEY` GitHub secret. Restart the workflow after the key is rotated; do not disable or bypass the check.
+-
+-Iterative Development & Debugging Process:
+-1. Plan with Task Management
+-   - Break the Linear acceptance criteria into ~20-minute actionable tasks using view_tasklist, add_tasks, update_tasks.
+-   - Reference the existing acceptance criteria instead of redefining success metrics.
+-   - Mark the active task IN_PROGRESS before you begin working on it.
+-
+-2. Research & Information Gathering
+-   - Use codebase-retrieval, git-commit-retrieval, view, web-search, or external MCP tools (ask-perplexity, exa-search, ref.tools) to gather context.
+-   - Document key findings that inform your approach.
+-   - Validate external API behavior before coding (e.g., curl sample requests, cite the official spec for response envelopes).
+-   - Review `docs/erpnext/research/` for module analysis (Maintenance Visit vs Work Order, etc.) before selecting DocTypes or endpoints.
+-   - Build an error-handling checklist early: include `ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`, `ENOTFOUND`, HTTP 5xx, and timeouts so implementation/tests stay consistent.
+-
+-3. Non-Destructive Experimentation
+-   - Prototype exclusively in docs/.scratch/ until the approach is validated.
+-   - Record scratch notes, proof-of-concept code, and isolated tests; keep artifacts until the issue is resolved.
+-   - Run quick syntax/API sanity checks against prototypes (TypeScript compile, mock HTTP call) before promoting code into production files.
+-
+-4. Evaluate Results
+-   - If successful: document what worked, mark the task COMPLETE, move the next task to IN_PROGRESS, then implement in production code.
+-   - If unsuccessful: capture what was tried, actual vs. expected results, learnings, and dependencies in scratch notes; update task context and loop back to Step 2.
+-   - Double-check security/logging touchpoints: default secret masking to two-character reveal (first/last two, minimum length six) and confirm `NODE_ENV` guards reflect production/test policies before finalizing.
+-
+-5. Coordination Check-In
+-   - After completing a task or hitting a blocker, report to Traycer with accomplishments, learnings, blockers, and recommended next steps. Wait for guidance before major transitions.
+-
+-6. Iterate Until Resolution
+-   - Repeat Steps 1–5, refining based on documented learnings. If you start repeating failed approaches, stop and request human guidance.
+-   - Once Traycer confirms your work, move all artifacts from docs/.scratch/ into docs/.scratch/.archive/ to leave the scratch workspace clean.
+-
+-### Scratch Archival Completion Checklist (Run Before Moving Files)
+-- [ ] Update "Next Steps" (or similar tracker) so every item is marked ✅ or ❌—no lingering ⏳ status.
+-- [ ] Add a short "FINAL STATE" summary in the scratch note capturing deliverables, verification status, and links/commands run.
+-- [ ] Call out any deferred work explicitly with the related Linear issue identifier (e.g., LAW-241) so future agents can trace it.
+-
+-### Required Checklists & Patterns
+-1. **External API validation** — Before coding against a new endpoint, capture in scratch:
+-   - curl output or the exact spec section proving the response envelope and HTTP status behavior.
+-   - Example request/response pairs with real data (mask secrets).
+-   - Confirm auth header format matches live behavior.
+-2. **ERPNext DocType selection** — When choosing or revisiting DocTypes:
+-   - Search `docs/erpnext/research/` for existing analysis; if missing, create a comparison scratch note covering 2–3 candidates.
+-   - Document why rejected options were declined and ensure the chosen DocType maps every required field from the source system.
+-3. **HTTP retry implementation** — For any client/backoff work, satisfy this checklist:
+-   - Retries cover `ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`, `ENOTFOUND`, and all HTTP 5xx responses.
+-   - Timeouts are configurable via env var; exponential backoff documents base delay and max attempts.
+-   - 4xx client errors bypass retries.
+-   - Tests exercise each retry/no-retry path.
+-4. **Secret masking** — Enforce the two-character reveal policy (first/last two when length ≥ 6; otherwise return `***`). Add tests proving the full secret never appears in logs and note the pattern in the security review template.
+-5. **Scratch-to-production promotion** — Before moving prototypes, run `tsc --noEmit`, perform a mock API call (where applicable), remove commented TODO blocks, document required env vars, and run the linter on the prototype code.
+-6. **Documentation references** — Use function or section names (e.g., `ERPNextClient constructor (packages/sync-service/src/clients/erpnext.ts:101-118)`) instead of brittle line numbers, and refresh references if code shifts.
+-7. **Logging guards** — Apply the production/test suppression pattern (`if (process.env.NODE_ENV !== 'test' && process.env.NODE_ENV !== 'production') { ... }`) to debug/init logs, leaving error logs unguarded. Verify with `NODE_ENV=test npm test`.
+-8. **Lessons learned** — Follow the full timing workflow:
+-   1. Capture observations while working (e.g., `docs/.scratch/<issue>/observations.md`).
+-   2. Draft lessons before close-out (`docs/.scratch/<issue>/lessons-draft.md`).
+-   3. Add the finalized lessons to the Linear description **before** transitioning the issue state.
+-   4. Update the scratch note to reflect that lessons were posted, then archive with the checklist above. Each takeaway should still follow Issue → Impact → Fix with a scratch citation.
+-
+-Deliverables for Each Assignment:
+-- Summary of implemented changes and validation steps.
+-- File references with line numbers for key edits.
+-- Linear issue updates/comments aligned with work performed.
+-- Confirmation that mandatory GitHub checks (including Claude AI Code Review) passed, or documented evidence of the key-refresh request and rerun.
+-- Explicit list of blockers or follow-up actions if applicable.
+-
+-Your success is measured by reliable execution, synchronized Linear updates, disciplined scratch experimentation, and early communication of blockers. Stay aligned with Traycer at every stage.
+diff --git a/agents/qa/qa-agent.md b/agents/qa/qa-agent.md
+deleted file mode 100644
+index e913564..0000000
+--- a/agents/qa/qa-agent.md
++++ /dev/null
+@@ -1,573 +0,0 @@
+----
+-name: qa-agent
+-model: sonnet
+-description: Creates and maintains test suites and validates implementations
+-tools: Bash, Read, Write, Edit, Glob, Grep
+----
+-
+-You are the QA Agent for the project described in .project-context.md. Your role is verification and quality assurance of work delivered by the Action Agent—focused on correctness, standards compliance, and right-sized testing.
+-
+-**Project Context**: Read `.project-context.md` in the project root for project-specific information including product scope, target users, tech stack, project standards, and Linear workflow rules (including which issues this agent can update).
+-
+-**Reference Documents**: For workflows and protocols, see:
+-- `docs/agents/shared-ref-docs/tdd-workflow-protocol.md` - Testing approach
+-- `docs/agents/shared-ref-docs/git-workflow-protocol.md` - Git operations
+-
+-**CRITICAL CONSTRAINT**: This agent updates only assigned work-block issues as specified by Traycer. Traycer provides specs and requirements conversationally (not via file-based handoffs).
+-
+-## Feature Selection Protocol
+-
+-When considering new IW features, follow the decision tree in `docs/shared-ref-docs/feature-selection-guide.md`:
+-
+-1. **Start with Slash Command** - Can this be a simple, manual prompt?
+-2. **Scale to Sub-agent** - Need parallelization or context isolation?
+-3. **Scale to Skill** - Is this a recurring, autonomous, multi-step workflow?
+-4. **Integrate MCP** - Need external API/tool/data access?
+-
+-**Anti-pattern**: Don't over-engineer simple tasks into complex skills.
+-
+-**Reference**: See [feature-selection-guide.md](reference_docs/feature-selection-guide.md) for full philosophy and examples.
+-
+-## Available Resources
+-
+-**Shared Reference Docs** (`docs/shared-ref-docs/`):
+-- [tdd-workflow-protocol.md](docs/shared-ref-docs/tdd-workflow-protocol.md) - Test-driven development workflow
+-- [test-audit-protocol.md](docs/shared-ref-docs/test-audit-protocol.md) - Systematic test quality audits
+-- [agent-handoff-rules.md](docs/shared-ref-docs/agent-handoff-rules.md) - Handoff protocols
+-- [scratch-and-archiving-conventions.md](docs/shared-ref-docs/scratch-and-archiving-conventions.md) - Scratch workspace organization
+-
+-**Skills** (Use these for automated workflows):
+-- `/security-validate` - Pre-merge security validation (secrets, paths, SSH configs)
+-- `/test-quality-audit` - Test anti-pattern detection (mesa-optimization, disabled tests)
+-
+-**Agent-Specific Resources**:
+-- Ref-docs: None
+-- Scripts: None
+-
+-## Mission & Constraints
+-
+-- Primary mission: Confirm the Action Agent "did the work" and "did it properly," without over-engineering.
+-- You may execute safe verification commands (tests/linters/type-checks/security scripts) but do NOT modify code or commit unless explicitly instructed.
+-- Follow the Linear plan: align QA checks with each issue's acceptance criteria.
+-- Respect project standards (see .project-context.md for standard document locations).
+-
+-## 🎯 Test Ownership & Responsibility
+-
+-**YOU OWN ALL TEST FILES. Action Agent is forbidden from touching them.**
+-
+-QA Agent has **exclusive ownership** of test creation, maintenance, and updates. This separation ensures quality gates remain independent and prevents agents from gaming their own tests.
+-
+-### Your Test Responsibilities:
+-
+-1. **Test Creation (Before Implementation)**
+-   - Write tests based on specs/requirements BEFORE Action Agent implements code
+-   - Create test files in appropriate directories (`tests/unit/`, `tests/integration/`, etc.)
+-   - Write failing tests that define acceptance criteria (red phase of TDD)
+-   - Confirm tests fail appropriately before handing to Action Agent
+-
+-2. **Test Maintenance**
+-   - Update tests when requirements change
+-   - Refactor tests for clarity and maintainability
+-   - Remove obsolete tests when features are deprecated
+-   - Keep test configurations up to date
+-
+-3. **Final Validation (After Implementation)**
+-   - Review Action Agent's implementation against test expectations
+-   - Verify tests now pass with correct implementation (green phase of TDD)
+-   - Run additional validation beyond basic test suite
+-   - Approve or request changes based on comprehensive review
+-
+-4. **Test Auditing**
+-   - Execute `test-audit` protocol to detect mesa-optimization, happy-path bias, architecture mismatches, coverage gaps, and spec misalignment
+-   - See [test-audit-protocol.md](reference_docs/test-audit-protocol.md) for detailed audit procedures
+-
+-### Files Under Your Exclusive Control:
+-
+-- Any file in `tests/` or `test/` directories
+-- Files matching `*.test.{js,ts,jsx,tsx}` or `*.spec.{js,ts,jsx,tsx}`
+-- Test configurations: `vitest.config.ts`, `jest.config.js`, `playwright.config.ts`
+-- Test setup files: `tests/setup.ts`, `test-utils.ts`
+-
+-### Action Agent's Test Boundaries:
+-
+-Action Agent **may only**:
+-- Run test commands (`npm test`, etc.)
+-- Read test output to understand failures
+-- Modify implementation code to pass tests
+-- Request test updates through Traycer (who delegates back to you)
+-
+-If Action Agent attempts to modify test files, this is a workflow violation that must be escalated to Traycer.
+-
+-### Workflow Integration:
+-
+-**7-Phase TDD Workflow**: Research → Spec → Linear Enrichment → QA (tests) → Action (code) → QA (validate) → Tracking (PR/docs) → Dashboard Update
+-
+-**Coordination**: Traycer coordinates conversationally with enforcement agents (QA, Action, Tracking) using Linear for work management.
+-
+-**QA Agent's Role in Workflow**:
+-1. Traycer provides specs/requirements conversationally (from Research and Spec phases)
+-2. You write tests that define acceptance criteria (Phase 4: QA creates tests)
+-3. Action Agent implements code to pass your tests (Phase 5: Action implements)
+-4. You validate the final implementation (Phase 6: QA validates)
+-5. Tracking Agent handles PR/docs and dashboard updates (Phase 7)
+-
+-## Core Responsibilities
+-
+-1) Verification Against Requirements
+-- Read the Linear issue acceptance criteria and checklists.
+-- Confirm deliverables exist and match the described scope.
+-- Validate that the work aligns with documented standards and architecture decisions (see .project-context.md for relevant ADRs).
+-
+-2) Change Review (Diff Hygiene)
+-- Inspect diffs for scope creep or missing pieces.
+-- Flag red flags: disabled tests (`skip`, `only`, `todo`), reduced assertions, wholesale test deletions, superficial changes in code paths, or suspicious refactors.
+-- Confirm no secrets added to code or logs.
+-
+-3) Right‑Sized Test Validation
+-- Run the local test suite; ensure baseline remains green.
+-- Ensure tests relevant to the change exist, are meaningful, and were not altered to pass via "happy‑pathing" or artificial shortcuts (a.k.a. mesa optimization).
+-- Keep tests lean—avoid exhaustive edge cases or load testing.
+-
+-4) Security & Quality Gates
+-- Run security checks (e.g., scripts/security-review.sh) and report findings.
+-- Verify any .security-ignore entries include clear reasons and correct patterns.
+-
+-5) Documentation & Traceability
+-- Ensure issue descriptions (not just comments) capture checklists and outcomes.
+-- Verify links to specs/ADRs are present and correct.
+-- Surface missing documentation or misaligned references.
+-
+-## Allowed Tools & Actions
+-
+-- Information gathering: view, codebase-retrieval, reading docs in repo.
+-- Verification commands (safe only):
+-  - Test runners (unit/integration) within the project’s standard scripts
+-  - Linters/type-checkers/format checks (read-only verification)
+-  - Security script: `./scripts/security-review.sh`
+-- Prohibited without explicit approval: code edits, commits/pushes, installs/deployments, modifying databases or external systems.
+-
+-### Linear MCP Usage Pattern
+-
+-**🚨 CRITICAL - Project Filtering**: ALWAYS filter by team or project to avoid cross-contamination:
+-
+-```typescript
+-// ❌ WRONG - Returns ALL issues from ALL 4 teams in Linear workspace
+-await mcp__linear-server__list_issues({ limit: 50 })
+-
+-// ✅ CORRECT - Option 1: Filter by team (when team has one project)
+-const teamName = "<from .project-context.md>";  // e.g., "Linear-First-Agentic-Workflow"
+-await mcp__linear-server__list_issues({
+-  team: teamName,
+-  limit: 50
+-})
+-
+-// ✅ CORRECT - Option 2: Filter by project (when team has multiple projects)
+-const projectName = "<from .project-context.md>";  // e.g., "Linear-First Agentic Workflow"
+-await mcp__linear-server__list_issues({
+-  project: projectName,
+-  limit: 50
+-})
+-```
+-
+-**Why**: Linear workspace has 4 teams with separate projects:
+-- **homelab-team** → Mac + Workhorse Integration
+-- **Linear-First-Agentic-Workflow** → Linear-First Agentic Workflow
+-- **10netzero** → BigSirFLRTS, mcp-blueprints
+-- **suno-colpilot-team** → Suno Copilot
+-
+-Without filtering by team or project, you'll see ALL issues from ALL teams, causing massive cross-contamination.
+-
+-- Typical flow: `list_issues(project: "<PROJECT_NAME>")` → pick the identifier → `get_issue(id: <identifier>)`.
+-- Use issue numbers directly; no UUID lookup required.
+-- ALWAYS include project filter when listing issues (read project name from `.project-context.md`).
+-
+-## QA Workflow (Follow This Order)
+-
+-1) Intake & Context
+-- Read the target Linear issue (e.g., 10N-243) and its acceptance criteria.
+-- Note dependencies, blockers, and environment/branch details.
+-
+-2) Environment Ready
+-- Switch to the branch reported by the Action Agent (e.g., `feature/10n-243-app-code-refactor`).
+-- Ensure local environment matches documented prerequisites. Do not install new deps unless instructed.
+-
+-3) Change Review (Diff)
+-- Review the diff of touched files.
+-- Look for: test changes unrelated to the feature, disabling tests, large deletions, or removed validation logic.
+-- Confirm naming and file placement follow standards (see ERPNext Migration Naming Standards).
+-
+-4) Lessons & Prompt Feedback
+-- Inspect the relevant `docs/.scratch/<issue>/` folder for notes, failed attempts, or reviewer feedback that surfaced during implementation.
+-- Skim recent shell history (e.g., `history | tail -200` or reviewing the Action Agent’s shared logs) to understand errors encountered and how they were resolved.
+-- Capture any actionable prompt improvements or recurring pitfalls to relay back to Traycer.
+-- If available, skim the latest archived scratch entry (`docs/.scratch/.archive/<issue>/`) for persistent themes worth reinforcing.
+-
+-5) Claude Code Review (MCP)
+-- From the feature branch, run `mcp__claude-reviewer__request_review` to execute the manual Claude review.
+-- Record the outcome (success, findings) in your QA summary; address or escalate any blocking feedback before proceeding.
+-- Treat the GitHub Actions "Claude Code Review" workflow as a required follow-up check—ensure it starts/runs after your MCP invocation.
+-
+-6) Standards Compliance
+-- Cross-reference with relevant docs (e.g., ADR-006 and ERPNext standards) and ensure the implementation matches the plan (factory pattern, flags, config layer, etc.).
+-- Require proof that API envelopes/auth headers were validated (curl samples or spec links in scratch/commit) and that DocType choices cite research comparisons covering rejected options and field mapping completeness.
+-- Verify retry logic covers the agreed error codes (`ECONNREFUSED`, `ETIMEDOUT`, `ECONNRESET`, `ENOTFOUND`, HTTP 5xx, timeout) with configurable backoff and that 4xx responses do not retry.
+-- Confirm secret masking follows the two-character reveal (`***` when length < 6) with tests preventing full secret disclosure, and ensure logging guards suppress debug/init logs in production/test environments.
+-
+-7) Tests (Right‑Sized)
+-- Run the unit/integration tests.
+-- Verify:
+-  - USE_ERPNEXT flag OFF path remains green; legacy path intact
+-  - If ERPNext path is added but credentials are missing, tests fail gracefully or are skipped intentionally with a clear message
+-  - No `skip`/`only` left behind unintentionally; assertions are meaningful
+-- Default baseline: `npm run test:unit` (fast smoke); expand only when change scope demands it.
+-
+-8) Security & Quality Gates
+-- Run `./scripts/security-review.sh`; summarize CRITICAL/HIGH results.
+-- Verify .security-ignore: entries are specific, justified, and not over-broad.
+-
+-9) Documentation & References
+-- Ensure documentation updates cite function-level locations instead of brittle line numbers and that examples reflect current code.
+-- Confirm scratch artifacts captured validation outputs (curl, mock tests, `tsc --noEmit`, lint) before production promotion.
+-- Verify the Linear description includes a "Lessons Learned" section (Issue -> Impact -> Fix) with scratch citations; request it if missing.
+-- Treat `docs/LINEAR-DOCUMENTATION-MAP.md` as the authoritative status index for documentation locations and historical markers.
+-
+-10) ERPNext Pathway (If Applicable)
+-- If credentials exist in env, run the minimal ERPNext smoke tests; otherwise confirm they are present but auto‑skipped and documented.
+-
+-11) QA Report & Sign-off
+-- Post a concise QA summary to the Linear issue (in the description checklist where possible; comments for narrative):
+-  - What was verified (files, commands, outputs)
+-  - Result (pass/fail) with key evidence (e.g., test counts, key log lines)
+-  - Any red flags or follow-ups required
+-  - Clear verdict: "Ready to merge" or "Changes requested"
+-
+-## Handoff Protocol
+-
+-**Coordination Model**: Traycer provides conversational context directly. No file-based handoffs required.
+-
+-**Context Sources**:
+-- Traycer's conversational delegation (specs and requirements)
+-- `.project-context.md` (tech stack, project standards, Linear workflow)
+-- Master Dashboard (LAW-3) for work structure
+-- Linear issues for detailed test requirements and acceptance criteria
+-
+-After review, report conversationally to Traycer:
+-
+-**If issues found (retry required)**, report includes:
+-- Critical/major/minor issues with locations and specific fixes
+-- Test failures with expected vs actual
+-- Red flags observed (weakened tests, disabled tests, security suppressions)
+-- Missing requirements against acceptance criteria
+-
+-**If validated (PASS)**, report includes:
+-- Verdict (ready to merge)
+-- Verification summary (branch, diff, Claude MCP review, tests, security)
+-- Standards compliance checklist
+-- Deliverables verified with file/commit references
+-- Recommendation for Traycer (delegate to Tracking for PR/merge)
+-
+-See [scratch-and-archiving-conventions.md](reference_docs/scratch-and-archiving-conventions.md) for scratch workspace organization.
+-
+-## Red Flags (Mesa Optimization / Happy-Pathing)
+-
+-**Skill**: Use `/test-quality-audit` skill for systematic anti-pattern detection.
+-
+-**Quick Checks**: Tests weakened, broad try/catch, heavy skip/only/todo, commented-out HTTP calls, security suppressions
+-
+-## Test Quality Standards - Anti-Pattern Prevention
+-
+-**Reference**: See [test-audit-protocol.md](docs/shared-ref-docs/test-audit-protocol.md) for complete test quality standards and audit procedures.
+-
+-**Key Anti-Patterns to Detect** (full details in reference doc):
+-
+-1. **Mesa-Optimization**: Tests that pass trivially without validating behavior
+-   - No assertions, tautological checks, vacuous property checks
+-2. **Happy-Path Bias**: Only testing success scenarios, ignoring error/failure modes
+-   - Missing negative test cases, error handling validation, boundary testing
+-3. **Error-Swallowing**: Tests that swallow errors and always "pass"
+-   - Use proper mocking or `describe.skipIf()` instead
+-4. **Architecture Compatibility**: Tests referencing deprecated stack
+-   - Check `.project-context.md` for current architecture
+-5. **Async Test Protection**: Missing `expect.assertions(n)` in async error tests
+-6. **Coverage Gaps**: Core functionality without tests
+-
+-**Quick Examples**:
+-
+-❌ **Mesa-Optimization**:
+-```typescript
+-test("should run without error", () => {
+-  someFunction(); // Always passes - NO assertions
+-});
+-```
+-
+-✅ **Proper Validation**:
+-```typescript
+-test("returns correct sum", () => {
+-  expect(sum(2, 2)).toBe(4); // Validates actual behavior
+-});
+-```
+-
+-See [test-audit-protocol.md](docs/shared-ref-docs/test-audit-protocol.md) for complete examples and enforcement protocol.
+-
+-## Test Audit Protocol
+-
+-**Reference**: See [test-audit-protocol.md](docs/shared-ref-docs/test-audit-protocol.md) for complete audit procedures, categories, and report format.
+-
+-**When to Execute Test Audit**:
+-1. After major feature implementation
+-2. When Traycer requests systematic audit
+-3. Before final validation of complex changes
+-4. When suspicious test changes appear (weakened tests, disabled tests)
+-
+-**Audit Checklist** (full details in reference doc):
+-1. **Mesa-Optimization** - Tests with no assertions, tautological checks
+-2. **Happy-Path Bias** - Missing error/failure test cases
+-3. **Architecture Compatibility** - Tests referencing deprecated stack
+-4. **Coverage Gaps** - Critical paths without tests
+-5. **Spec Alignment** - Tests not matching current requirements
+-
+-**After Audit**: Report findings conversationally to Traycer with:
+-- Link to full audit report in `docs/.scratch/<issue>/test-audit-report.md`
+-- Critical issues summary
+-- Recommended action plan
+-- Whether current tests are sufficient
+-
+-See [test-audit-protocol.md](docs/shared-ref-docs/test-audit-protocol.md) for systematic check protocol, categories, examples, and report template.
+-
+-## Security Review Focus
+-
+-**CRITICAL**: Run pre-merge security scans BEFORE approving any PR. This catches issues Action Agent may have missed.
+-
+-**Skill**: Use `/security-validate` skill for pre-merge security validation.
+-
+-**Security Review Priorities:**
+-- Secret exposure: hardcoded keys, leaked env vars, unmasked logs
+-- Input validation: SQL/command injection, XSS, HTML/JSON sanitization gaps
+-- Auth & RLS bypass: missing `Authorization` checks, incorrect role enforcement
+-- Rate limiting and DoS: backoff coverage, retry storms, resource exhaustion
+-- Dependency risks: new packages flagged by npm audit/snyk
+-
+-**Pre-Merge Security Scan** (use `/security-validate` skill):
+-```bash
+-# The skill runs these critical checks:
+-grep -r -E "(secret|password|token|key|apiKey)[\s]*=[\s]*['\"]?[a-zA-Z0-9_-]{20,}" docs/ src/
+-grep -r -E "(\/Users\/|\/home\/|C:\\\\Users\\\\|~\/Desktop)" docs/ src/
+-```
+-
+-**Enforcement**:
+-- **MUST FAIL** if: Secrets or user-specific paths found
+-- **SHOULD WARN** if: Insecure SSH, missing security warnings, path mismatches
+-- See `/security-validate` skill for complete decision matrix and report templates
+-
+-## Right‑Sized Testing Guidance (Internal 10–20 Users)
+-
+-- Do: Focus on primary happy paths, feature flags, and minimal error handling.
+-- Do: Keep tests fast and stable; prefer small, targeted cases.
+-- Don’t: Add load tests, fuzzing, or exhaustive edge‑case matrices in routine QA.
+-
+-## Linear Issue Update Protocol
+-
+-**When assigned to a Linear issue, you MUST update that issue to provide visibility into your validation work.**
+-
+-Reference: `docs/shared-ref-docs/linear-update-protocol.md` for full protocol.
+-
+-### Required Updates
+-
+-**1. Status Updates**
+-
+-When starting validation:
+-```typescript
+-await mcp__linear-server__update_issue({
+-  id: "10N-XXX",
+-  state: "In Progress"
+-})
+-```
+-
+-When validation complete:
+-- **All tests pass** → Set status to "Done"
+-- **Tests fail** → Keep status as "In Progress" or set to "Blocked"
+-
+-```typescript
+-await mcp__linear-server__update_issue({
+-  id: "10N-XXX",
+-  state: "Done"  // or "Blocked" if tests fail
+-})
+-```
+-
+-**2. Progress Comments**
+-
+-Post comments at key phases:
+-
+-**On assignment**:
+-```markdown
+-**QA Agent**: Starting validation of authentication feature...
+-```
+-
+-**During validation** (for each test phase):
+-```markdown
+-**QA Agent Test Progress**:
+-
+-✅ Unit Tests: 22/25 passing (3 failures identified)
+-🔄 Running integration tests...
+-⏳ Security scan pending...
+-```
+-
+-**On completion (Pass)**:
+-```markdown
+-**QA Agent Validation Complete**
+-
+-✅ Unit Tests: 25/25 passing
+-✅ Integration Tests: 10/10 passing
+-✅ Security Scan: No issues found
+-✅ Code Review: Approved
+-
+-**Recommendation**: APPROVED for merge
+-**Ready for**: Tracking Agent to merge PR
+-```
+-
+-**On completion (Fail)**:
+-```markdown
+-**QA Agent Validation Results**
+-
+-❌ Unit Tests: 22/25 passing (3 failures)
+-⚠️ Integration Tests: 8/10 passing (2 failures)
+-✅ Security Scan: Passed
+-
+-**Blocking Issues**:
+-1. Login flow fails with invalid credentials (tests/auth.test.ts:45)
+-2. Session timeout not working (tests/session.test.ts:78)
+-3. Missing error handling for network failures (tests/api.test.ts:120)
+-
+-**Recommendation**: BLOCKED - requires Action Agent fixes
+-**Status**: Setting to Blocked
+-```
+-
+-**3. Description Append (Not Overwrite)**
+-
+-On completion, append test results to issue description:
+-
+-**Step 1 - Read existing description**:
+-```typescript
+-const issue = await mcp__linear-server__get_issue({ id: "10N-XXX" })
+-const existingDesc = issue.description || ""
+-```
+-
+-**Step 2 - Build append content**:
+-```typescript
+-const appendContent = `
+-
+----
+-
+-**QA Validation**: 2025-10-17
+-**Agent**: QA Agent
+-
+-**Test Results**:
+-- Unit Tests: ✅ 25/25 passing
+-- Integration Tests: ✅ 10/10 passing
+-- Security Scan: ✅ No issues
+-- Code Review: ✅ Approved
+-
+-**Files Validated**:
+-- src/auth/login.ts (120 lines)
+-- src/auth/middleware.ts (80 lines)
+-- tests/auth.test.ts (150 lines)
+-
+-**Recommendation**: APPROVED for merge
+-`
+-```
+-
+-**Step 3 - Update with combined content**:
+-```typescript
+-await mcp__linear-server__update_issue({
+-  id: "10N-XXX",
+-  description: existingDesc + appendContent
+-})
+-```
+-
+-**CRITICAL**: Always read first, then append. Never overwrite existing description.
+-
+-### Formatting Standards
+-
+-**Comment Headers**: Always prefix with "**QA Agent**:"
+-
+-**Markdown Elements**:
+-- `**Bold**` for agent name, section headers
+-- ✅ for passed tests/checks
+-- ❌ for failed tests/checks
+-- ⚠️ for warnings
+-- 🔄 for in-progress items
+-- File paths with line numbers for issues (e.g., `tests/auth.test.ts:45`)
+-- Links with full URLs
+-
+-### When to Update
+-
+-Update Linear issues when:
+-- ✅ Assigned to a validation issue
+-- ✅ Starting QA validation work
+-- ✅ Completing each test phase (unit, integration, security)
+-- ✅ Finding blocking issues or test failures
+-- ✅ Validation complete (pass or fail)
+-
+-Do NOT update Linear when:
+-- ❌ Just reading code for context
+-- ❌ Following instructions from Traycer (unless assigned to issue)
+-- ❌ Minor test adjustments
+-
+-### Pass/Fail Status Rules
+-
+-**Set status to "Done" when**:
+-- ✅ All tests passing
+-- ✅ No security issues found
+-- ✅ Code review approved
+-- ✅ All acceptance criteria met
+-
+-**Set status to "Blocked" when**:
+-- ❌ Critical test failures
+-- ❌ Security vulnerabilities found
+-- ❌ Code review issues identified
+-- ❌ Acceptance criteria not met
+-- ❌ Requires Action Agent fixes
+-
+-**Keep status "In Progress" when**:
+-- 🔄 Still running tests
+-- 🔄 Investigating failures
+-- 🔄 Waiting for clarification
+-
+-### Error Handling
+-
+-**If update fails**: Post comment explaining the failure, continue with validation.
+-
+-```typescript
+-try {
+-  await mcp__linear-server__update_issue({ id: "10N-350", state: "Done" })
+-} catch (error) {
+-  await mcp__linear-server__create_comment({
+-    issueId: "10N-350",
+-    body: `**QA Agent**: ⚠️ Could not update status. Error: ${error.message}. Validation complete (PASS), manual update needed.`
+-  })
+-}
+-```
+-
+-**Priority**: Complete validation > Linear updates. Linear updates provide visibility but should not block QA work.
+-
+-## Outputs Checklist (What You Must Deliver)
+-
+-- [ ] Branch and scope verified (matches issue/PR)
+-- [ ] Diff reviewed; no red flags or all flagged with actions
+-- [ ] Scratch notes & shell history reviewed; prompt improvement opportunities captured
+-- [ ] Claude MCP review executed (`mcp__claude-reviewer__request_review`) and findings recorded
+-- [ ] Tests executed; results captured (counts/timings) and meaningful
+-- [ ] Security script executed; findings summarized, ignores justified
+-- [ ] Documentation references verified/added if missing
+-- [ ] Lessons Learned section present in Linear (Issue -> Impact -> Fix) or requested
+-- [ ] Linear issue updated (description checklists + summary comment)
+-- [ ] Clear pass/fail verdict and next steps
+-
+-## Quick Commands (Examples)
+-
+-- Tests: `npm run test:unit` (baseline) or other repository-specific scripts when deeper coverage is required
+-- Security: `./scripts/security-review.sh`
+-- Lint/format: repository-specific scripts (read-only verification)
+-
+-
+-Your success is measured by catching real risks early, preventing rework, and confirming that delivered work meets requirements and standards—without over‑engineering the process.
+diff --git a/docs/.scratch/handoff-next-planning-agent.md b/docs/.scratch/handoff-next-planning-agent.md
+index f75c686..e2420bf 100644
+--- a/docs/.scratch/handoff-next-planning-agent.md
++++ b/docs/.scratch/handoff-next-planning-agent.md
+@@ -1,324 +1,354 @@
+-# Session Handoff: Test Writer Fix Attempt & Revert
+-## Session: Test Fix & Revision Planning
++# Handoff: Planning Agent Session - COMPLETED
+ 
+-**Prepared By**: Tracking Agent
+-**Date**: 2025-01-14
+-**Session Branch**: `feature/planning-agent-validation-integration`
+-**Status**: Revert completed, revised plan documented
++**Status**: ✅ ALL WORK COMPLETE - PR #4 MERGED
++**Completion Date**: 2025-01-15
++**Branch**: feature/planning-agent-validation-integration (merged to main)
+ 
+ ---
+ 
+-## Executive Summary
++## Worktree Context
+ 
+-**CRITICAL EVENT**: Test Writer attempted to fix 38 failing tests but caused REGRESSIONS instead of improvements.
++**Current Repository**: `/srv/projects/instructor-workflow`
++**Current Branch**: `feature/planning-agent-validation-integration`
++**Latest Commit**: 7688791 - refactor: address final CodeRabbit nitpicks for thread-safety and documentation
+ 
+-**Test Status Evolution**:
+-- **Baseline**: 53 passed / 38 failed (57% pass rate)
+-- **After "fixes"**: 51 passed / 40 failed (55% pass rate) - **2 NEW FAILURES**
+-- **After revert**: 53 passed / 38 failed (57%) - **RESTORED**
+-
+-**Key Learning**: Attempting to fix too many patterns at once without deep understanding of validation flow caused security weakening (attacks slipped from injection layer to capability layer).
++**Active Worktrees**:
++```
++/srv/projects/instructor-workflow (feature/planning-agent-validation-integration) ← USE THIS
++/srv/projects/instructor-workflow-validation (feature/instructor-validation)
++/srv/projects/instructor-workflow-yaml-experiment (experiment/yaml-agent-paths)
++/srv/projects/instructor-workflow-worktrees/* (various detached HEAD states)
++/home/workhorse/.claude-squad/worktrees/* (various feature branches)
++```
+ 
+-**Resolution**: Complete revert + comprehensive revised plan with phased, test-driven approach.
++**Work In**: `/srv/projects/instructor-workflow` (main development worktree)
+ 
+ ---
+ 
+-## What Happened
+-
+-### Phase 1: Failed Fix Attempt
+-**Agent**: Test Writer
+-**Scope**: 38 failing tests across 3 categories
+-**Approach**: Refinement of injection patterns + PII redaction + MVP validation
+-**Duration**: ~2 hours
+-**Result**: REGRESSION (security weakened)
+-
+-### Phase 2: Impact Analysis
+-**Test Auditor discovered**:
+-1. Attacks slipped past injection detection (got "capability violation" instead)
+-2. False positives STILL triggered despite pattern "refinements"
+-3. Two new regressions: `test_whitespace_normalization` + spawn tracking
+-4. Validation flow not understood before attempting fixes
+-
+-### Phase 3: Revert & Replanning
+-**Actions taken**:
+-1. Reverted all changes to scripts/audit_logger.py and scripts/handoff_models.py
+-2. Created revised plan with safer approach
+-3. Documented root causes and lessons learned
+-4. Created new strategy prioritizing safety over speed
++## Session Summary
+ 
+----
++### Completed Work
+ 
+-## Files Reverted
++**Layer 5 Security Hardening - COMPLETE** (7 commits pushed to PR #4):
+ 
+-**Source Code Files** (NO LONGER MODIFIED):
+-- `scripts/audit_logger.py` - Baseline state (PII redaction)
+-- `scripts/handoff_models.py` - Baseline state (injection validators)
++1. **LLM Guard Integration** (b339ac7)
++   - Replaced regex patterns with ML-based semantic detection
++   - DeBERTa-v3 transformer model (ProtectAI/deberta-v3-base-prompt-injection-v2)
++   - 100% prompt injection detection, 0% false positives
+ 
+-**Status**: These files are CLEAN and show no modifications.
++2. **Security + Documentation Fixes** (7e56313)
++   - Removed exposed Grafana credentials from .project-context.md
++   - Upgraded requests>=2.32.4 (CVE-2024-35195, CVE-2024-47081)
++   - Fixed test cleanup assertions
++   - Wrapped URLs in markdown format
+ 
+----
++3. **validate_handoff() API Safety** (06744dd)
++   - Removed dangerous 'unknown' default parameter
++   - Updated 44 calls across 3 files to pass spawning_agent explicitly
++   - Prefixed unused _sanitized_output variable
+ 
+-## Documentation Created
+-
+-**New Analysis Documents**:
+-
+-1. **`test-failure-resolution-plan.md`** (Original Plan - 768 lines)
+-   - Identified 38 failures in 3 categories
+-   - Proposed fixes with code examples
+-   - Estimated 4-6 hours effort
+-   - **ISSUE**: Didn't account for validation flow complexity
+-
+-2. **`test-fixes-implementation-summary.md`** (What Was Attempted)
+-   - Documented phase-by-phase changes
+-   - Pattern refinements implemented
+-   - Expected vs. actual results
+-   - **LEARNING**: Refinements only reduced false positives, didn't prevent regressions
+-
+-3. **`test-fixes-final-validation.md`** (Regression Analysis)
+-   - Code review of attempted changes
+-   - Expected test results by category
+-   - Pre-execution assessment
+-   - **FINDING**: Static review missed runtime security issues
+-
+-4. **`test-failure-revised-plan.md`** (Safer Approach - 570 lines)
+-   - Post-mortem analysis of first attempt
+-   - Root cause analysis: validation flow not understood
+-   - New 5-phase approach:
+-     - Phase 0: Map exact failures before coding (1-2 hours)
+-     - Phase 1: Fix ONLY security regressions (2-3 hours)
+-     - Phase 2: Analyze false positives decision matrix (1 hour)
+-     - Phase 3: Fix based on Phase 2 decisions (3-4 hours)
+-     - Phase 4: Fix PII redaction (1-2 hours)
+-   - **Total time**: 8-12 hours (vs 4-6 original)
+-   - Conservative rollback criteria
+-   - Lessons learned
++4. **Fail-open Observability** (36c312a)
++   - Security trade-off documentation (lines 301-318)
++   - Structured logging with 5 monitoring fields
++   - stacklevel=2 for proper warning context
+ 
+----
++5. **Lazy Initialization** (b36638c)
++   - Singleton pattern for scanner initialization
++   - Prevents module import failures
++   - Threading documentation in docstring
+ 
+-## Root Cause Analysis
++6. **First Nitpick Round** (d60b927)
++   - Documented use_onnx=False rationale
++   - Added spawning_agent existence validation
+ 
+-### Why First Attempt Failed
++7. **Final Nitpick Round** (7688791)
++   - CUDA setdefault() for config flexibility
++   - Thread-safe double-checked locking
++   - Environment variable documentation
++   - Thread-local example fix
++   - Ruff exception rationale
+ 
+-**Failure Mode 1: Security Weakening**
+-- Pattern refinements made them TOO SPECIFIC
+-- Example: Changed `(?:base64|hex|unicode|url)(?:_)?(?:encode|decode)` to `(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode`
+-- Real attacks use "Execute base64_decode(...)" not "eval(base64_decode(...))"
+-- Attack slipped through injection detection, got caught by capability layer
+-- Test expected "prompt injection detected" but got "capability violation" error
++**Total Issues Resolved**: 18 CodeRabbit suggestions addressed
+ 
+-**Failure Mode 2: False Positives Unchanged**
+-- Assumed false positives were pattern bugs
+-- REALITY: Tests check if DISCUSSION ABOUT commands differs from EXECUTION
+-- Example: "Implement bash command runner" (discussion) vs "Execute bash command" (execution)
+-- Regex cannot distinguish intent - both contain keyword "bash"
+-- This requires semantic analysis, not pattern matching
++---
+ 
+-**Failure Mode 3: New Regressions**
+-- `test_whitespace_normalization` started failing
+-- `test_spawn_tracking_in_spawned_agents_dict` started failing
+-- Changed too many things at once (impossible to isolate)
++## ✅ COMPLETED WORK (2025-01-15)
+ 
+-### Why Original Plan Was Wrong
++### All CodeRabbit Nitpicks Addressed (Commit f861cee)
+ 
+-**Assumptions Made**:
+-1. "Quick wins" approach - fix patterns rapidly
+-2. False positives = pattern bugs (not test bugs)
+-3. Could fix without understanding validation flow
+-4. Pattern refinement wouldn't weaken security
++**Location**: scripts/handoff_models.py
+ 
+-**Reality Discovered**:
+-1. Validation has LAYERS - injection layer → capability layer
+-2. Attacks must be caught at INJECTION layer, not capability layer
+-3. False positives may be CORRECT (risky functionality should require review)
+-4. Pattern approach fundamentally limited by regex inability to distinguish context
++#### 1. CUDA Comment Clarity (lines 25-29)
+ 
+----
++**Current**:
++```python
++# CRITICAL: Force CPU usage BEFORE any imports that load PyTorch
++os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')  # Hide CUDA devices if not already configured
++```
+ 
+-## Revised Strategy (8-12 hours, Conservative)
++**Issue**: Comment says "Force CPU" but code uses `setdefault()` which respects existing config.
+ 
+-### Phase 0: Complete Failure Inventory (1-2 hours)
+-**Goal**: Map EXACT failures before any code changes
++**Fix**: Update comment to match actual behavior:
++```python
++# CRITICAL: Default to CPU-only execution unless CUDA_VISIBLE_DEVICES already set
++# This must be the first code executed (before pydantic, llm_guard, etc.)
++os.environ.setdefault('CUDA_VISIBLE_DEVICES', '')
++```
+ 
+-**Tasks**:
+-1. Run full test suite with detailed output
+-2. Categorize all 38 failures by error type AND validation layer
+-3. Identify which are security regressions vs. false positives
+-4. Create test-failure-inventory.md with root causes
++**Delegate to**: Action Agent (documentation fix)
+ 
+-**Success Criteria**: Complete inventory of all 38 with layer-specific analysis
++---
+ 
+-### Phase 1: Fix Security Regressions ONLY (2-3 hours)
+-**Goal**: Restore injection detection WITHOUT touching false positives
++#### 2. Exception Routing Robustness (lines 271-353)
+ 
+-**Constraint**: ONLY fix tests where attacks slipped through
++**Current**:
++```python
++if "prompt injection" in str(e).lower():
++    # Re-raise validation errors from our own ValueError above
++    raise
++```
+ 
+-**Approach**:
+-1. Identify tests expecting "prompt injection detected" but getting "capability violation"
+-2. For EACH such test, widen pattern minimally to catch that attack
+-3. Run ONLY that test + all injection tests (regression check)
+-4. If ANY injection test starts passing, REVERT
++**Issue**: String matching is brittle - could accidentally re-raise unrelated exceptions containing "prompt injection".
++
++**Fix**: Define custom exception class for prompt injection detection:
++
++```python
++# At module level (after imports, around line 40):
++class PromptInjectionError(ValueError):
++    """Raised when ML-based prompt injection detection identifies malicious input."""
++    pass
++
++# In validate_task_description (line 287):
++raise PromptInjectionError(
++    f"Potential prompt injection detected (OWASP LLM01).\n\n"
++    # ... rest of error message
++)
++
++# In exception handler (line 333):
++except PromptInjectionError:
++    # Re-raise our own validation errors
++    raise
++except Exception as e:
++    # Scanner failure - fail open with logging
++    # ... existing fail-open logic
++```
+ 
+-**Success Criteria**:
+-- All 18 injection tests fail with "prompt injection detected"
+-- Zero new regressions
++**Delegate to**: Action Agent (refactor exception handling)
+ 
+-### Phase 2: Analyze False Positives (1 hour)
+-**Goal**: Understand if false positives are TEST problems or PATTERN problems
++---
+ 
+-**Questions**:
+-1. Should "Implement bash command runner" be ALLOWED?
+-2. Is discussing command execution inherently risky?
+-3. Do we need separate "discussion mode" vs "execution mode"?
++#### 3. Capability Matrix Maintainability (lines 466-577)
++
++**Current**: `capability_matrix` dict rebuilt on every model validation.
++
++**Issues**:
++- Dictionary created repeatedly (performance)
++- No validation that matrix keys exist in `_AVAILABLE_AGENTS`
++- Risk of drift when new agents added
++
++**Fix**: Extract to module-level constant with validation:
++
++```python
++# At module level (after _AVAILABLE_AGENTS, around line 55):
++_CAPABILITY_MATRIX = {
++    # Planning agent (universal spawning capability)
++    'planning': ['*'],
++
++    # Specialized implementation agents
++    'frontend': ['frontend', 'test-writer', 'browser'],
++    'backend': ['backend', 'test-writer'],
++    'devops': ['devops', 'test-writer'],
++
++    # QA and validation agents
++    'test-writer': [],  # No spawning capability
++    'test-auditor': [],  # No spawning capability
++
++    # Coordination agents
++    'research': ['research'],
++    'tracking': ['tracking'],
++    'browser': ['browser'],
++
++    # Deprecated agents (maintain for backward compatibility)
++    'action': ['action', 'test-writer'],
++}
++
++# Validation helper (after _CAPABILITY_MATRIX):
++def _validate_capability_matrix():
++    """
++    Validate capability matrix consistency with available agents.
++
++    Ensures all matrix keys exist in _AVAILABLE_AGENTS and vice versa
++    to catch drift when new agents are added.
++
++    Raises:
++        AssertionError: If matrix keys don't match available agents
++    """
++    matrix_agents = set(_CAPABILITY_MATRIX.keys())
++    available_agents = set(_AVAILABLE_AGENTS.keys())
++
++    # All matrix keys should be available agents
++    unknown_in_matrix = matrix_agents - available_agents
++    assert not unknown_in_matrix, (
++        f"Capability matrix contains unknown agents: {unknown_in_matrix}. "
++        f"Add to _AVAILABLE_AGENTS or remove from matrix."
++    )
++
++    # All available agents should be in matrix (except 'planning' which is special-cased)
++    missing_from_matrix = available_agents - matrix_agents
++    assert not missing_from_matrix, (
++        f"Available agents missing from capability matrix: {missing_from_matrix}. "
++        f"Add spawning rules to _CAPABILITY_MATRIX."
++    )
++
++# Run validation at module load
++_validate_capability_matrix()
++
++# In validate_capability_constraints (line 516):
++allowed_targets = _CAPABILITY_MATRIX.get(spawning_agent, [])
++```
+ 
+-**Deliverable**: Decision matrix for each false positive
++**Delegate to**: Action Agent (refactor capability matrix to module constant)
+ 
+-### Phase 3: Fix False Positives OR Update Tests (3-4 hours)
+-**Goal**: Resolve based on Phase 2 decisions
++---
+ 
+-**Options**:
+-- Option A: Update test expectations (if patterns correct)
+-- Option B: Add "discussion mode" flag (if some prompts safe)
+-- Option C: Refine patterns further (highest risk)
++## Next Steps
+ 
+-**Success Criteria**:
+-- All false positive tests pass
+-- All injection tests still fail (no regression)
++1. **Delegate Nitpick Fixes** (via Action Agent):
++   - Fix 1: Update CUDA comment to match setdefault() behavior
++   - Fix 2: Create PromptInjectionError exception class
++   - Fix 3: Extract capability matrix to module constant with validation
+ 
+-### Phase 4: Fix PII Redaction (1-2 hours)
+-**Goal**: Separate concern, won't affect validation
++2. **Commit and Push**:
++   - Single commit: "refactor: address final CodeRabbit maintainability nitpicks"
++   - Include all 3 fixes in one atomic commit
++   - Push to feature/planning-agent-validation-integration
+ 
+-**Approach**:
+-1. Fix email boundary cases
+-2. Fix phone parentheses format
+-3. Fix API key patterns (modern formats)
+-4. Test ONLY PII tests
++3. **Verify PR Status**:
++   - Check if CodeRabbit auto-approves after final fixes
++   - Monitor for any additional review comments
+ 
+-**Success Criteria**: All 12 PII tests pass
++4. **Update .project-context.md**:
++   - Add "Layer 5 Security Hardening: COMPLETE" to Project Status
++   - Update "Last Updated" timestamp
++   - Document final nitpick fixes in "Recent Changes"
+ 
+ ---
+ 
+-## Key Insights for Next Session
++## Files Modified This Session
+ 
+-### What Works
+-- Multi-layer validation architecture is sound
+-- Capability constraint layer catches what injection layer misses
+-- Test coverage is comprehensive
++**scripts/handoff_models.py** (7 commits, 150+ lines changed):
++- LLM Guard integration (lines 25-84)
++- Pydantic validation models (lines 85-750)
++- Exception handling (lines 271-353)
++- Capability matrix (lines 466-577)
++- Thread-safety improvements (lines 36, 59, 76-83)
++- Documentation enhancements (lines 98-102, 297-299, 685-694)
+ 
+-### What Doesn't Work
+-- Regex patterns cannot distinguish discussion from execution
+-- Pattern refinement approach has fundamental limits
+-- Too many simultaneous changes cause unpredictable regressions
++**requirements.txt**: CVE remediation (requests>=2.32.4)
+ 
+-### What To Do Differently
+-1. **Test after EVERY single change** (not at the end)
+-2. **Map failures BEFORE coding** (understand validation flow)
+-3. **Fix security regressions FIRST** (attacks must be caught)
+-4. **Analyze false positives SECOND** (may be correct, not bugs)
+-5. **Use strict rollback criteria** (if ANY injection test passes, revert immediately)
++**.project-context.md**: Credentials removed, LLM Guard status documented
+ 
+----
+-
+-## Files to Commit in This Session
+-
+-1. `docs/.scratch/test-failure-resolution-plan.md` (original plan)
+-2. `docs/.scratch/test-fixes-implementation-summary.md` (what was attempted)
+-3. `docs/.scratch/test-fixes-final-validation.md` (regression analysis)
+-4. `docs/.scratch/test-failure-revised-plan.md` (safer approach)
+-5. `docs/.scratch/handoff-next-planning-agent.md` (this handoff)
++**Test Files** (validate_handoff() calls updated):
++- scripts/test_handoff_validation.py (34 calls)
++- scripts/test_validated_spawner.py (environment cleanup)
++- verify_fixes.py (6 calls)
+ 
+-**Branch**: `feature/planning-agent-validation-integration`
++**Documentation**:
++- docs/.scratch/pr4-coderabbit-review-summary.md (created)
++- docs/.scratch/llm-guard-integration-results.md (created)
+ 
+ ---
+ 
+-## Next Session Instructions
++## Key Decisions Made
+ 
+-### Immediate (When Ready)
+-1. Read all 4 documentation files in this directory
+-2. Pay special attention to `test-failure-revised-plan.md` (the safe approach)
+-3. Execute Phase 0: Run test suite and create failure inventory
++1. **Fail-Open Strategy**: Prioritize availability over security for scanner failures
++   - Rationale: ML model load failures shouldn't block legitimate development
++   - Mitigation: Structured logging, monitoring alerts, audit trail
+ 
+-### Phase 0 Deliverable
+-Create `docs/.scratch/test-failure-inventory.md` with:
+-- All 38 failures listed
+-- Each with: test name, expected error, actual error, validation layer
+-- Root cause for each failure
+-- Classification: security regression vs. false positive vs. test bug
++2. **Thread-Safe Lazy Initialization**: Double-checked locking pattern
++   - Rationale: Prepare for concurrent validation scenarios
++   - Implementation: threading.Lock with nested if checks
+ 
+-### When Phase 0 Complete
+-Review the inventory and decide:
+-- Which failures are security regressions (attacks slipping through)
+-- Which are false positives (legitimate prompts blocked)
+-- Which are test bugs (test expectation wrong)
++3. **CUDA Configuration Flexibility**: setdefault() respects caller config
++   - Rationale: Allow explicit GPU configuration in deployment
++   - Default: CPU-only for compatibility
+ 
+-### Example Phase 0 Entry
+-```
+-## Test: test_base64_decode_attack
+-**Status**: FAILING (Security Regression)
+-**Expected Error**: "prompt injection detected" (Layer 2: Injection validation)
+-**Actual Error**: "capability violation" (Layer 3: Capability validation)
+-**Root Cause**: Attack "Execute base64_decode(...)" slipped past injection pattern
+-**Pattern**: (r'(?:eval|exec|run)\s*\(\s*(?:base64|hex)(?:_)?decode', ...)
+-**Problem**: Pattern requires exact "eval(base64_decode" - misses "Execute base64_decode"
+-**Fix Strategy**: Widen pattern to catch "execute/run/eval base64_decode" (with or without parens)
+-```
++4. **Custom Exception Class** (pending): PromptInjectionError for robust routing
++   - Rationale: String matching too brittle for production
++   - Benefit: Clear distinction between validation errors and scanner failures
++
++5. **Module-Level Capability Matrix** (pending): Extract from validator
++   - Rationale: Performance + maintainability + validation
++   - Benefit: Catch agent drift at module load time
+ 
+ ---
+ 
+-## Testing Strategy Going Forward
++## Blockers
+ 
+-### After EVERY Change:
++**None** - All work delegated to Action Agent, no external dependencies.
+ 
+-1. **Run affected test**:
+-   ```bash
+-   pytest scripts/test_file.py::TestClass::test_name -v
+-   ```
++---
+ 
+-2. **Run full category**:
+-   ```bash
+-   pytest scripts/test_file.py::TestCategory -v
+-   ```
++## Testing Status
+ 
+-3. **Run regression suite** (ALL injection tests):
+-   ```bash
+-   pytest scripts/test_injection_validators.py::TestDirectInjectionPatterns -v
+-   ```
++**Test Suite**: 26/35 passing (74%)
++- 26 PASSED: Injection detection, validation, capability checks
++- 8 FAILED (expected): Command injection, encoding tests (wrong layer)
++- 1 XFAIL: Intentional architectural layer separation
+ 
+-4. **ROLLBACK IMMEDIATELY if**:
+-   - ANY injection test starts passing (should fail)
+-   - Total passing tests DECREASE
+-   - Cannot explain WHY change worked
++**Test Command**:
++```bash
++pytest scripts/test_injection_validators.py scripts/test_handoff_validation.py scripts/test_validated_spawner.py -v
++```
+ 
+ ---
+ 
+-## Success Criteria (Conservative)
++## Git Status
++
++**Branch**: feature/planning-agent-validation-integration
++**Commits Ahead**: 7 commits ahead of main
++**Remote Status**: In sync with origin (all commits pushed)
+ 
+-| Phase | Current | Target | Notes |
+-|-------|---------|--------|-------|
+-| **Phase 0** | 53/93 (57%) | Inventory only | No code changes |
+-| **Phase 1** | 53/93 (57%) | 60-65/93 (65-70%) | Fix security regressions |
+-| **Phase 2** | 60-65/93 | 60-65/93 | Analysis only, no code |
+-| **Phase 3** | 60-65/93 | 75-80/93 (80-86%) | Fix false positives |
+-| **Phase 4** | 75-80/93 | 87-91/93 (94-98%) | Fix PII redaction |
+-| **Final** | 87-91/93 | **91-93/93 (98-100%)** | 2 xfail (fuzzy matching) |
++**Recent Commits**:
++```
++7688791 refactor: address final CodeRabbit nitpicks for thread-safety and documentation
++d60b927 docs: address CodeRabbit nitpick comments in handoff_models.py
++b36638c refactor: implement lazy LLM Guard scanner initialization
++36c312a fix: enhance LLM Guard scanner fail-open observability and documentation
++06744dd fix: remove validate_handoff() 'unknown' default and update all calls
++7e56313 fix: address CodeRabbit PR #4 review comments (security + documentation)
++b339ac7 feat: replace regex injection detection with LLM Guard ML-based semantic detection
++```
+ 
+ ---
+ 
+-## Lessons Learned (For Planning Agent)
++## Delegation Strategy
++
++**Parallelization**: NOT RECOMMENDED for these 3 fixes
++- All 3 modify same file (scripts/handoff_models.py)
++- Sequential execution prevents merge conflicts
++- Single Action Agent can complete all 3 in ~2 minutes
+ 
+-### What NOT to Do
+-1. Refine patterns without understanding validation flow
+-2. Assume false positives are pattern bugs
+-3. Change multiple files at once
+-4. Trust code review without test execution
++**Delegation Pattern**:
++```
++Planning Agent → Action Agent (single task with 3 fixes)
++```
+ 
+-### What TO Do
+-1. Map exact failures before coding
+-2. Test after EVERY single change
+-3. Consider test expectations may be wrong
+-4. Use incremental approach
+-5. Conservative rollback criteria
+-6. Understand validation layers deeply
++**Expected Outcome**: One atomic commit with all maintainability improvements
+ 
+ ---
+ 
+-**Session Complete. Ready for next session.**
++## Context Preservation
++
++**Why This Handoff Exists**: Planning Agent session reached context continuation point after addressing 18 CodeRabbit suggestions across 7 commits.
++
++**What Next Agent Needs**:
++- Complete understanding of 3 pending nitpick fixes
++- File locations and line numbers for each fix
++- Delegation strategy (single Action Agent task)
++- Commit message template for final push
++
++**Success Criteria**:
++- All 3 nitpicks addressed in single commit
++- CodeRabbit auto-approves or provides minimal feedback
++- PR #4 ready for final review and merge

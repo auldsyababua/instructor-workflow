@@ -1,0 +1,79 @@
+# Example Migration Manifest
+# This shows a typical migration for a messy Python project
+
+version: "1.0"
+
+# Directories to create (if they don't exist)
+ensure_directories:
+  - src
+  - src/core
+  - src/utils
+  - scripts
+  - docs
+  - tests
+  - archive
+  - archive/quarantine
+  - .ai
+
+# File moves (source -> destination)
+moves:
+  # Move Python application code to src/
+  - source: main.py
+    dest: src/
+  - source: app.py
+    dest: src/
+  - source: utils.py
+    dest: src/utils/
+  - source: helpers.py
+    dest: src/utils/
+
+  # Move shell scripts to scripts/
+  - source: deploy.sh
+    dest: scripts/
+  - source: backup.sh
+    dest: scripts/
+  - source: run_tests.sh
+    dest: scripts/
+
+  # Move documentation to docs/
+  - source: CHANGELOG.txt
+    dest: docs/
+  - source: old_readme.md
+    dest: docs/
+  - source: architecture.md
+    dest: docs/
+
+  # Move test files to tests/
+  - source: test_main.py
+    dest: tests/
+  - source: test_utils.py
+    dest: tests/
+
+  # Move deprecated files to archive/
+  - source: old_version.py
+    dest: archive/
+  - source: legacy_script.sh
+    dest: archive/
+
+  # Uncertain files go to quarantine for manual review
+  - source: random_script.py
+    dest: archive/quarantine/
+  - source: temp_file.txt
+    dest: archive/quarantine/
+
+# Files to ignore (never move)
+ignore:
+  - .git
+  - .gitignore
+  - .gitattributes
+  - migration_manifest.yaml
+  - node_modules
+  - venv
+  - __pycache__
+  - "*.pyc"
+  - .env
+  - .env.local
+  - README.md
+  - LICENSE
+  - setup.py
+  - requirements.txt

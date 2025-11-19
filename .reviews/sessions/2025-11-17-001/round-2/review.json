@@ -1,0 +1,41 @@
+{
+  "review_id": "2025-11-17-001",
+  "timestamp": "2025-11-17T22:54:59.507Z",
+  "status": "needs_changes",
+  "round": 2,
+  "design_compliance": {
+    "follows_architecture": false,
+    "major_violations": [
+      {
+        "issue": "Review Parse Error",
+        "description": "Failed to parse Claude CLI response: No JSON object found in result",
+        "impact": "major",
+        "recommendation": "Check Claude CLI output and ensure it returns valid JSON with --output-format json"
+      }
+    ]
+  },
+  "comments": [
+    {
+      "type": "general",
+      "severity": "major",
+      "category": "design",
+      "comment": "Review could not be parsed from Claude CLI response.",
+      "suggested_fix": "Verify Claude CLI is working correctly and returns the expected JSON format"
+    }
+  ],
+  "missing_requirements": [],
+  "summary": {
+    "design_violations": 1,
+    "critical_issues": 0,
+    "major_issues": 1,
+    "minor_issues": 0,
+    "suggestions": 0
+  },
+  "test_results": {
+    "passed": false,
+    "summary": "Review parsing failed"
+  },
+  "overall_assessment": "needs_changes",
+  "__claudeSessionId": "120f6b83-94a0-4d33-8b8d-970bd2484773",
+  "__claudeModel": "opus"
+}

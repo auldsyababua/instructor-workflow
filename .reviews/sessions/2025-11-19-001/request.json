@@ -1,0 +1,11 @@
+{
+  "summary": "Task A1: Fix registry.yaml naming and populate metadata for Grafana/vLLM agents. Changed 2 agent keys to kebab-case (\"Grafana Agent\" → \"grafana-agent\", \"vLLM Agent\" → \"vllm-agent\"), populated empty tools arrays with 7 and 6 tools respectively, added meaningful descriptions. All 9 validation tests passing (100%).",
+  "focus_areas": [
+    "YAML syntax correctness",
+    "Kebab-case naming consistency across all 27 agents",
+    "Tools array completeness and accuracy",
+    "Cross-field consistency (name field matches key)",
+    "Description quality and completeness"
+  ],
+  "test_command": "python3 docs/.scratch/native-orchestrator/test-a1-validation.py"
+}

@@ -1,0 +1,164 @@
+{
+  "skill_name": "merge-conflict-resolver",
+  "skill_path": "/srv/projects/instructor-workflow/skills/merge-conflict-resolver",
+  "test_version": "1.0",
+  "description": "Test cases for merge-conflict-resolver skill - generic Git merge conflict analysis and resolution",
+  "unit_tests": [
+    {
+      "name": "Test check-merge-status.sh runs on current repo",
+      "type": "script",
+      "script": "check-merge-status.sh",
+      "args": [],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Current Branch"
+      },
+      "description": "Verify status checker script executes and shows branch information"
+    },
+    {
+      "name": "Test check-merge-status.sh shows HEAD commit",
+      "type": "script",
+      "script": "check-merge-status.sh",
+      "args": [],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Current HEAD"
+      },
+      "description": "Verify status checker shows current commit information"
+    },
+    {
+      "name": "Test check-merge-status.sh shows working directory status",
+      "type": "script",
+      "script": "check-merge-status.sh",
+      "args": [],
+      "expected_exit_code": 0,
+      "expected_output": {
+        "contains": "Working Directory Status"
+      },
+      "description": "Verify status checker shows git status output"
+    }
+  ],
+  "integration_tests": [
+    {
+      "name": "Test complete status check workflow",
+      "type": "workflow",
+      "description": "End-to-end test: check merge status without making changes",
+      "steps": [
+        {
+          "action": "Change to instructor-workflow repository",
+          "command": "cd /srv/projects/instructor-workflow"
+        },
+        {
+          "action": "Run status checker",
+          "command": "/srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/check-merge-status.sh"
+        },
+        {
+          "action": "Verify no errors",
+          "command": "echo 'Status check completed'"
+        }
+      ],
+      "expected_result": "Status check runs successfully without modifying repository"
+    },
+    {
+      "name": "Test script existence and permissions",
+      "type": "workflow",
+      "description": "Verify all required scripts exist and are executable",
+      "steps": [
+        {
+          "action": "Check resolve-merge-conflicts.sh",
+          "command": "test -x /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/resolve-merge-conflicts.sh && echo '✓ Main orchestrator exists and is executable'"
+        },
+        {
+          "action": "Check analyze-and-merge.sh",
+          "command": "test -x /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/analyze-and-merge.sh && echo '✓ Analyzer exists and is executable'"
+        },
+        {
+          "action": "Check simple-merge.sh",
+          "command": "test -x /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/simple-merge.sh && echo '✓ Simple merger exists and is executable'"
+        },
+        {
+          "action": "Check check-merge-status.sh",
+          "command": "test -x /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/check-merge-status.sh && echo '✓ Status checker exists and is executable'"
+        }
+      ],
+      "expected_result": "All four core scripts exist and have execute permissions"
+    },
+    {
+      "name": "Test documentation completeness",
+      "type": "workflow",
+      "description": "Verify SKILL.md and README.md exist and have proper content",
+      "steps": [
+        {
+          "action": "Check SKILL.md has frontmatter",
+          "command": "head -3 /srv/projects/instructor-workflow/skills/merge-conflict-resolver/SKILL.md | grep -q 'name: merge-conflict-resolver' && echo '✓ SKILL.md has proper frontmatter'"
+        },
+        {
+          "action": "Check README.md exists",
+          "command": "test -f /srv/projects/instructor-workflow/skills/merge-conflict-resolver/README.md && wc -l /srv/projects/instructor-workflow/skills/merge-conflict-resolver/README.md | grep -q '[0-9]' && echo '✓ README.md exists and has content'"
+        }
+      ],
+      "expected_result": "Documentation files exist with proper structure and content"
+    }
+  ],
+  "regression_tests": [
+    {
+      "name": "Regression: No hardcoded PR #185 references in scripts",
+      "description": "Ensure no PR-specific references remain in generic skill scripts",
+      "type": "baseline",
+      "steps": [
+        {
+          "action": "Search for PR #185 references",
+          "command": "! grep -r 'PR #185' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/ && echo 'No PR #185 found'"
+        },
+        {
+          "action": "Search for infrastructure-tooling references",
+          "command": "! grep -r 'infrastructure-tooling' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/ && echo 'No infrastructure-tooling found'"
+        },
+        {
+          "action": "Search for hardcoded bigsirflrts path",
+          "command": "! grep -r '/srv/projects/bigsirflrts' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/ && echo 'No hardcoded paths found'"
+        }
+      ],
+      "validation_method": "exit_code",
+      "notes": "Ensure complete genericization - no traces of original PR #185 context remain in scripts"
+    },
+    {
+      "name": "Regression: Scripts use git rev-parse for repository root",
+      "description": "Verify scripts use git rev-parse --show-toplevel instead of hardcoded paths",
+      "type": "baseline",
+      "steps": [
+        {
+          "action": "Check for git rev-parse usage",
+          "command": "grep -q 'git rev-parse --show-toplevel' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/analyze-and-merge.sh && echo '✓ Uses git rev-parse for repo detection'"
+        }
+      ],
+      "validation_method": "exit_code",
+      "notes": "Auto-detection of repository root is key feature of genericization"
+    },
+    {
+      "name": "Regression: Color output support maintained",
+      "description": "Ensure color codes are present for enhanced readability",
+      "type": "baseline",
+      "steps": [
+        {
+          "action": "Check for color definitions",
+          "command": "grep -E 'RED=|GREEN=|YELLOW=|BLUE=' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/analyze-and-merge.sh && echo '✓ Color codes present'"
+        },
+        {
+          "action": "Check for NO_COLOR support",
+          "command": "grep -q 'NO_COLOR' /srv/projects/instructor-workflow/skills/merge-conflict-resolver/scripts/analyze-and-merge.sh && echo '✓ NO_COLOR environment variable supported'"
+        }
+      ],
+      "validation_method": "exit_code",
+      "notes": "Color-coded output is key feature from original PR-185 scripts, with CI/CD compatibility"
+    }
+  ],
+  "_instructions": {
+    "unit_tests": "Test individual scripts for basic functionality (status checking without modifications)",
+    "integration_tests": "Test script existence, permissions, and documentation completeness",
+    "regression_tests": "Ensure genericization is complete and original design features are preserved",
+    "setup": "No fixture files needed - tests run against live instructor-workflow repository",
+    "cleanup": "No cleanup needed - status checks are non-destructive",
+    "howto": "Run with: python3 /srv/projects/instructor-workflow/skills/skill-testing-framework/scripts/run_tests.py /srv/projects/instructor-workflow/skills/merge-conflict-resolver/tests/merge-conflict-resolver-tests.json --skill-path /srv/projects/instructor-workflow/skills/merge-conflict-resolver"
+  }
+}

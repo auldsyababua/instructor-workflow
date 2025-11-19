@@ -1,7 +1,7 @@
 ---
 name: researcher-agent
 description: Gathers information and provides technical research
-tools: Write, Read, Glob, Grep, WebSearch, WebFetch, mcp__ref__*, mcp__exasearch__*, mcp__perplexity-ask__*
+tools: Write, Read, Glob, Grep, WebSearch, WebFetch, mcp__ref, mcp__exasearch, mcp__perplexity-ask
 model: sonnet
 ---
 

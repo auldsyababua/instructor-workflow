@@ -1,0 +1,186 @@
+{
+  "skill_name": "expert-debugger",
+  "skill_path": "skills/expert-debugger",
+  "test_version": "1.0",
+  "description": "Test cases for expert-debugger skill - validates skill triggering, guidance quality, and integration with debugging workflows",
+  "unit_tests": [],
+  "integration_tests": [
+    {
+      "name": "Test flaky test debugging workflow",
+      "type": "workflow",
+      "description": "Verify skill provides systematic debugging protocol for flaky tests",
+      "steps": [
+        {
+          "action": "Trigger skill with flaky test query",
+          "details": "User describes a flaky CI test failure"
+        },
+        {
+          "action": "Validate skill activation",
+          "details": "Skill should recognize this as a complex bug requiring systematic debugging"
+        },
+        {
+          "action": "Validate guidance quality",
+          "details": "Skill should provide 12-step protocol including reproduction, observability, hypothesis testing"
+        }
+      ],
+      "input": {
+        "user_query": "We have a flaky test in our CI that fails randomly on our Node service. The test_checkout.js test passes locally but fails intermittently in CI with timeout errors. Help me track this down and fix it.",
+        "files": []
+      },
+      "expected_output": {
+        "type": "debugging_guidance",
+        "validation": "Response should include: (1) Frame the problem precisely step, (2) Make it reproducible instructions (run in loop), (3) Add observability (logging suggestions), (4) Classify bug type (likely race condition/timing), (5) Hypothesis-driven approach, (6) Lint fixing requirement"
+      }
+    },
+    {
+      "name": "Test production bug debugging workflow",
+      "type": "workflow",
+      "description": "Verify skill provides systematic approach for production intermittent errors",
+      "steps": [
+        {
+          "action": "Trigger skill with production bug query",
+          "details": "User describes intermittent 500 errors in production"
+        },
+        {
+          "action": "Validate systematic protocol",
+          "details": "Skill should guide through reproduction, observability, search space shrinking"
+        },
+        {
+          "action": "Validate prevention focus",
+          "details": "Skill should emphasize root cause analysis and systemic guardrails"
+        }
+      ],
+      "input": {
+        "user_query": "Production is throwing intermittent 500s on our checkout endpoint. Logs show 'Payment service timeout' but it's not consistent. About 1 in 50 requests fail. How do I debug this?",
+        "files": []
+      },
+      "expected_output": {
+        "type": "debugging_guidance",
+        "validation": "Response should include: (1) Bug contract definition (Given checkout, expect 200, got 500), (2) Reproduction strategy (gather logs, identify patterns), (3) Observability improvements (log payment calls), (4) Shrink search space (isolate payment service), (5) Root cause prevention (circuit breakers, monitoring)"
+      }
+    },
+    {
+      "name": "Test memory leak debugging workflow",
+      "type": "workflow",
+      "description": "Verify skill provides performance debugging guidance",
+      "steps": [
+        {
+          "action": "Trigger skill with memory leak query",
+          "details": "User describes unbounded memory growth"
+        },
+        {
+          "action": "Validate tool recommendations",
+          "details": "Skill should recommend profilers and heap analysis tools"
+        },
+        {
+          "action": "Validate hypothesis approach",
+          "details": "Skill should guide through common leak patterns (event listeners, caches, circular refs)"
+        }
+      ],
+      "input": {
+        "user_query": "Our API service's memory usage grows unbounded over 24-48 hours until it crashes. Memory starts at 200MB and reaches 8GB before OOM. How do I find and fix the leak?",
+        "files": []
+      },
+      "expected_output": {
+        "type": "debugging_guidance",
+        "validation": "Response should include: (1) Bug classification (performance/memory leak), (2) Reproduction strategy (load test simulating days of traffic), (3) Tools (memory profilers, heap snapshots), (4) Hypotheses (event listeners, cache eviction, circular refs), (5) Prevention (memory monitoring alerts)"
+      }
+    },
+    {
+      "name": "Test lint violation after quick fix",
+      "type": "workflow",
+      "description": "Verify skill integrates lint fixing into debugging protocol",
+      "steps": [
+        {
+          "action": "Trigger skill with lint issue query",
+          "details": "User applied quick fix that caused lint violations"
+        },
+        {
+          "action": "Validate lint integration",
+          "details": "Skill should treat lint violations as bugs to fix, not suppress"
+        },
+        {
+          "action": "Validate root cause focus",
+          "details": "Skill should encourage fixing root cause, not just symptoms"
+        }
+      ],
+      "input": {
+        "user_query": "I applied a quick patch to stop a crash in our payment processing, but now ESLint is complaining all over the file. Should I just disable the linter for this file?",
+        "files": []
+      },
+      "expected_output": {
+        "type": "debugging_guidance",
+        "validation": "Response should include: (1) Re-evaluate the patch (root cause vs symptom), (2) Improve implementation to follow standards, (3) Fix lint issues properly (no suppression without justification), (4) Emphasis that passing lint is part of 'done'"
+      }
+    },
+    {
+      "name": "Test skill does NOT trigger for simple syntax errors",
+      "type": "negative_test",
+      "description": "Verify skill doesn't trigger for trivial bugs that don't need systematic debugging",
+      "input": {
+        "user_query": "I'm getting 'SyntaxError: Unexpected token' on line 42 in my JavaScript file. What's wrong?",
+        "files": []
+      },
+      "expected_output": {
+        "type": "simple_fix",
+        "validation": "This should NOT trigger expert-debugger skill (too simple, no systematic protocol needed). Should be handled by general assistance."
+      }
+    },
+    {
+      "name": "Test skill does NOT trigger for simple test writing",
+      "type": "negative_test",
+      "description": "Verify skill doesn't trigger when user just needs tests written (use test-specialist instead)",
+      "input": {
+        "user_query": "Can you write tests for my calculateTotal function? I want unit tests covering edge cases.",
+        "files": []
+      },
+      "expected_output": {
+        "type": "test_writing",
+        "validation": "This should NOT trigger expert-debugger skill. Should trigger test-specialist skill instead."
+      }
+    }
+  ],
+  "regression_tests": [
+    {
+      "name": "Regression: Flaky test guidance completeness",
+      "description": "Ensure flaky test debugging guidance maintains all 12 protocol steps",
+      "input": {
+        "user_query": "We have a flaky test that fails about 10% of the time in CI. It's test_user_login.js and the failure message is 'Timeout waiting for element'. How do I fix this?",
+        "files": []
+      },
+      "baseline_file": "tests/baselines/expert-debugger_flaky_test_baseline.txt",
+      "validation_method": "structural_match",
+      "notes": "Baseline should include all 12 steps: Frame, Reproducible, Observability, Shrink Space, Classify, Hypothesize, Tools, Handle Flaky, Fix, Validate, Root Cause, Escalation. Exact wording can vary, but structure must remain."
+    },
+    {
+      "name": "Regression: Lint integration consistency",
+      "description": "Ensure lint fixing remains integrated in debugging protocol, not optional",
+      "input": {
+        "user_query": "I fixed a bug but now the linter is complaining. What should I do?",
+        "files": []
+      },
+      "baseline_file": "tests/baselines/expert-debugger_lint_integration_baseline.txt",
+      "validation_method": "contains",
+      "expected_phrases": [
+        "treat lint violations as bugs",
+        "fix all lint issues",
+        "passing lint is part of done",
+        "do not suppress without justification"
+      ],
+      "notes": "Must emphasize lint fixing as mandatory, not optional cleanup"
+    }
+  ],
+  "_test_notes": {
+    "skill_type": "Procedural/Guidance skill (no scripts to test)",
+    "test_focus": "Skill triggering accuracy, guidance completeness, integration with related skills",
+    "baseline_creation": "Run skill manually with test inputs, capture full response, save to baselines/ directory",
+    "validation_approach": "Since skill provides guidance (not deterministic output), use 'structural_match' and 'contains' validation methods",
+    "negative_tests": "Verify skill doesn't over-trigger on simple bugs that don't need systematic protocol"
+  },
+  "_instructions": {
+    "unit_tests": "Not applicable - skill has no scripts or functions to unit test",
+    "integration_tests": "Test complete debugging workflows to ensure skill provides comprehensive guidance",
+    "regression_tests": "Use baseline comparisons to ensure guidance quality doesn't degrade",
+    "howto": "To run tests: python3 skills/skill-testing-framework/scripts/run_tests.py tests/expert-debugger-tests.json --verbose"
+  }
+}

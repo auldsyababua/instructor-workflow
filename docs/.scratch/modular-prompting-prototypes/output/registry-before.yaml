@@ -1,0 +1,51 @@
+agents:
+  backend-agent:
+    name: backend-agent
+    display_name: Backend Agent (Billy)
+    description: Handles server-side implementation and API development
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []
+    responsibilities:
+      - API endpoint implementation
+      - Database schema and queries
+      - Authentication and authorization
+
+  frontend-agent:
+    name: frontend-agent
+    display_name: Frontend Agent (Frank)
+    description: Handles UI/UX implementation and client-side development
+    model: sonnet
+    tools:
+      - Bash
+      - Read
+      - Write
+      - Edit
+      - Glob
+      - Grep
+    delegates_to: []
+    responsibilities:
+      - React/Vue component development
+      - UI/UX implementation
+      - Client-side state management
+
+  researcher-agent:
+    name: researcher-agent
+    display_name: Research Agent
+    description: Gathers information and provides technical research
+    model: sonnet
+    tools:
+      - Write
+      - Read
+      - WebSearch
+      - WebFetch
+    delegates_to: []
+    responsibilities:
+      - Conduct research with citations
+      - Analyze options and tradeoffs

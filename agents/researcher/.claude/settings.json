@@ -21,9 +21,9 @@
       "Edit(agents/**)",
       "Bash(rm :*)",
       "Bash(mv :*)",
-      "mcp__github__push_*",
-      "mcp__linear-server__create_*",
-      "mcp__linear-server__update_*"
+      "mcp__github__push_files",
+      "mcp__linear-server__create_issue,mcp__linear-server__create_comment,mcp__linear-server__create_project",
+      "mcp__linear-server__update_issue,mcp__linear-server__update_project"
     ]
   }
 }

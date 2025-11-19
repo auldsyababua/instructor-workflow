@@ -1561,7 +1561,7 @@ agents:
     
     allowed_tools:
       # Plane MCP Server Tools (all 42 tools)
-      - "mcp__plane__*"
+      - "mcp__plane"
       
       # File Operations (for reading handoffs, writing reports)
       - "Read"

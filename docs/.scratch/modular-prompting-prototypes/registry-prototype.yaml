@@ -1,0 +1,24 @@
+agents:
+  researcher-agent:
+    name: researcher-agent
+    display_name: Research Agent
+    description: Gathers information and provides technical research
+    model: sonnet
+    tools:
+      - Write
+      - Read
+      - Glob
+      - Grep
+      - WebSearch
+      - WebFetch
+      - mcp__ref__*
+      - mcp__exasearch__*
+      - mcp__perplexity-ask__*
+    delegates_to: []
+    responsibilities:
+      - Conduct research with citations
+      - Analyze options (pros/cons/risks)
+      - Create Linear parent/child issues
+    forbidden:
+      - Write production code
+      - Update Linear mid-job
