@@ -1,0 +1,320 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<research_output>
+  <initial_plan>
+    Populate optional registry fields (delegates_to, cannot_access, exclusive_access, responsibilities, forbidden)
+    for all 27 agents by extracting metadata from persona files using pattern matching + manual validation.
+  </initial_plan>
+
+  <validation_work>
+    <perplexity_query>N/A - Internal codebase analysis, no external research needed</perplexity_query>
+    <tests_executed>
+      <test path="/srv/projects/traycer-enforcement-framework/docs/agents/planning/planning-agent.md">
+        Delegation extraction: Found 11 agents in "Delegation Decision Tree" (lines 113-124)
+      </test>
+      <test path="/srv/projects/traycer-enforcement-framework/docs/agents/backend/backend-agent.md">
+        Cannot_access extraction: Found test file restrictions (lines 74-84)
+      </test>
+      <test path="/srv/projects/traycer-enforcement-framework/docs/agents/researcher/researcher-agent.md">
+        Forbidden extraction: Found 6 forbidden actions in lines 429-434
+      </test>
+    </tests_executed>
+    <alternatives_rejected>
+      <alternative reason="Cannot distinguish context from actual responsibilities">
+        NLP-based semantic extraction - Too error-prone for responsibilities field
+      </alternative>
+      <alternative reason="Exclusive_access rarely explicit outside Test-Writer">
+        Automated exclusive_access extraction - Needs human judgment
+      </alternative>
+    </alternatives_rejected>
+  </validation_work>
+
+  <final_plan>
+    <inventory>
+      <files>
+        <file path="/srv/projects/instructor-workflow/agents/registry.yaml" lines="1-534">
+          Target file for enrichment - 27 agent entries to populate
+        </file>
+        <file path="/srv/projects/traycer-enforcement-framework/docs/agents/*/agent.md" lines="N/A">
+          Source files for metadata extraction (27 persona files)
+        </file>
+      </files>
+      <dependencies>
+        <dependency critical="true">
+          <name>yq</name>
+          <version>latest</version>
+          <note>YAML parsing for registry manipulation</note>
+        </dependency>
+        <dependency critical="false">
+          <name>ripgrep</name>
+          <version>latest</version>
+          <note>Fast pattern matching across persona files</note>
+        </dependency>
+      </dependencies>
+      <infrastructure>
+        <env_var required="false">N/A</env_var>
+      </infrastructure>
+    </inventory>
+
+    <implementation>
+      <component name="Delegates_To Extraction">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-delegates.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Extract delegates_to patterns from persona files
+# Pattern 1: Task tool usage - "Spawn <agent>"
+# Pattern 2: Delegation decision trees
+# Pattern 3: "delegates to" explicit mentions
+
+AGENT_NAME="$1"
+PERSONA_FILE="/srv/projects/traycer-enforcement-framework/docs/agents/${AGENT_NAME}/${AGENT_NAME}-agent.md"
+
+# Extract spawn patterns
+DELEGATES=$(grep -iE "(spawn|task tool|delegates? to)" "$PERSONA_FILE" | \
+  grep -oE "(frontend|backend|test-writer|test-auditor|researcher|tracking|devops|browser|debug|seo)-agent" | \
+  sort -u)
+
+# Format for YAML array
+echo "$DELEGATES" | while read agent; do
+  echo "      - $agent"
+done
+        ]]></code>
+        <gotcha>
+          Planning Agent has comprehensive delegation decision tree (lines 113-124).
+          Leaf agents (Backend, Researcher, Test-Writer) have empty delegates_to.
+        </gotcha>
+        <best_practice>
+          Cross-reference spawning patterns with actual Task tool usage to validate extraction accuracy.
+        </best_practice>
+      </component>
+
+      <component name="Cannot_Access Extraction">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-forbidden-paths.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Extract path restrictions from persona files
+# Pattern 1: Test file restrictions (implementation agents)
+# Pattern 2: "FORBIDDEN" sections with paths
+# Pattern 3: Explicit "cannot access" or "forbidden from" with paths
+
+AGENT_NAME="$1"
+PERSONA_FILE="/srv/projects/traycer-enforcement-framework/docs/agents/${AGENT_NAME}/${AGENT_NAME}-agent.md"
+
+# Extract test file restrictions (common pattern)
+if grep -q "FORBIDDEN FROM TOUCHING TEST FILES" "$PERSONA_FILE"; then
+  echo "      - tests/**"
+  echo "      - test/**"
+  echo "      - '*.test.*'"
+  echo "      - '*.spec.*'"
+fi
+
+# Extract src restrictions (Research/Test-Auditor agents)
+if grep -q "No direct code writes\|cannot modify source code" "$PERSONA_FILE"; then
+  echo "      - src/**"
+fi
+
+# Extract frontend restrictions (Backend agents)
+if grep -q "Frontend Agent owns UI\|cannot.*frontend" "$PERSONA_FILE"; then
+  echo "      - frontend/**"
+fi
+
+# Extract backend restrictions (Frontend agents)
+if grep -q "Backend Agent owns.*API\|cannot.*backend" "$PERSONA_FILE"; then
+  echo "      - backend/**"
+fi
+        ]]></code>
+        <gotcha>
+          Backend Agent restriction: tests/** (line 78), frontend/** (line 159).
+          Researcher Agent restriction: src/**, tests/** (line 558-559).
+          Test-Writer Agent restriction: src/**, frontend/**, backend/** (lines 586-589).
+        </gotcha>
+        <best_practice>
+          Use Section 8.1 reference: "Extract '❌' or 'FORBIDDEN' sections" for comprehensive coverage.
+        </best_practice>
+      </component>
+
+      <component name="Exclusive_Access Extraction">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-exclusive.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Extract exclusive ownership patterns
+# Pattern: "EXCLUSIVE ownership" or "ONLY agent allowed"
+
+AGENT_NAME="$1"
+PERSONA_FILE="/srv/projects/traycer-enforcement-framework/docs/agents/${AGENT_NAME}/${AGENT_NAME}-agent.md"
+
+# Test-Writer Agent owns tests/** exclusively
+if [[ "$AGENT_NAME" == "test-writer-agent" ]]; then
+  echo "      - tests/**"
+fi
+
+# Extract other exclusive ownership mentions
+grep -B2 -A2 -iE "(exclusive|only.*agent|solely responsible)" "$PERSONA_FILE" | \
+  grep -oE "\`[^/]*\*\*/[^\`]*\`" || true
+        ]]></code>
+        <gotcha>
+          Only Test-Writer Agent has explicit exclusive_access (tests/**).
+          QA Agent deprecated, but registry still lists it - needs manual review.
+        </gotcha>
+        <best_practice>
+          Manual validation required - exclusive ownership often implicit in workflow.
+        </best_practice>
+      </component>
+
+      <component name="Responsibilities Extraction">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-responsibilities.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Extract responsibilities from "What You Do" or "Mission" sections
+# REQUIRES MANUAL VALIDATION - Too contextual for pure automation
+
+AGENT_NAME="$1"
+PERSONA_FILE="/srv/projects/traycer-enforcement-framework/docs/agents/${AGENT_NAME}/${AGENT_NAME}-agent.md"
+
+# Extract numbered list items from "What You Do" section
+awk '/^### What You Do/,/^###/ {print}' "$PERSONA_FILE" | \
+  grep -E "^[0-9]+\.|^-" | \
+  sed 's/^[0-9]\+\. //' | \
+  sed 's/^- //' | \
+  sed 's/^\*\*//' | \
+  head -5  # Limit to top 5 responsibilities
+
+# Fallback: Extract from Mission section
+if [ ! -s /dev/stdout ]; then
+  awk '/^## Mission/,/^##/ {print}' "$PERSONA_FILE" | \
+    grep -E "^-" | \
+    sed 's/^- //' | \
+    head -5
+fi
+        ]]></code>
+        <gotcha>
+          Backend Agent responsibilities (lines 107-148) - Comprehensive list across 7 categories.
+          Researcher Agent responsibilities (lines 560-570) - RAEP-specific tasks.
+          Planning Agent responsibilities (lines 447-453) - Coordination only, no execution.
+        </gotcha>
+        <best_practice>
+          Manual review REQUIRED - Automated extraction captures structure, human validates meaning.
+        </best_practice>
+      </component>
+
+      <component name="Forbidden Extraction">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-forbidden.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Extract forbidden actions from "What You Don't Do" or "FORBIDDEN" sections
+
+AGENT_NAME="$1"
+PERSONA_FILE="/srv/projects/traycer-enforcement-framework/docs/agents/${AGENT_NAME}/${AGENT_NAME}-agent.md"
+
+# Extract from "What You Don't Do" section
+awk '/^### What You Don.t Do/,/^###/ {print}' "$PERSONA_FILE" | \
+  grep -E "^-" | \
+  sed 's/^- //'
+
+# Extract from "FORBIDDEN" sections
+grep -A5 "FORBIDDEN" "$PERSONA_FILE" | \
+  grep -E "^-|^❌" | \
+  sed 's/^- //' | \
+  sed 's/^❌ //'
+
+# Extract from "NEVER" statements
+grep -iE "(never|must not|cannot|prohibited)" "$PERSONA_FILE" | \
+  grep -v "^#" | \
+  head -10
+        ]]></code>
+        <gotcha>
+          Backend Agent forbidden (lines 155-161): Modify tests, Update Linear, Commit git, Deploy, UI, Infra.
+          Researcher Agent forbidden (lines 566-570): Write code, Make decisions, Update Linear, Git ops.
+          Planning Agent forbidden (lines 413-430): Direct implementation, Linear updates, Git ops.
+        </gotcha>
+        <best_practice>
+          90% reliable extraction - Persona files consistently use "What You Don't Do" pattern.
+        </best_practice>
+      </component>
+
+      <component name="Registry Update Script">
+        <code language="bash" file="/srv/projects/instructor-workflow/scripts/enrich-registry-all.sh"><![CDATA[
+#!/bin/bash
+set -euo pipefail
+
+# Master enrichment script - Orchestrates all extraction scripts
+
+REGISTRY="/srv/projects/instructor-workflow/agents/registry.yaml"
+TEMP_REGISTRY="${REGISTRY}.tmp"
+
+echo "Starting registry enrichment for 27 agents..."
+
+# Backup registry
+cp "$REGISTRY" "${REGISTRY}.backup"
+
+# Extract agent list
+AGENTS=$(yq '.agents | keys | .[]' "$REGISTRY")
+
+for agent in $AGENTS; do
+  echo "Processing: $agent"
+
+  # Run extraction scripts
+  DELEGATES=$(./scripts/enrich-registry-delegates.sh "$agent")
+  FORBIDDEN_PATHS=$(./scripts/enrich-registry-forbidden-paths.sh "$agent")
+  EXCLUSIVE=$(./scripts/enrich-registry-exclusive.sh "$agent")
+  FORBIDDEN=$(./scripts/enrich-registry-forbidden.sh "$agent")
+
+  # Update registry (preserving YAML structure)
+  yq eval -i ".agents.${agent}.delegates_to = [$(echo "$DELEGATES" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')]" "$REGISTRY"
+  yq eval -i ".agents.${agent}.cannot_access = [$(echo "$FORBIDDEN_PATHS" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')]" "$REGISTRY"
+  yq eval -i ".agents.${agent}.exclusive_access = [$(echo "$EXCLUSIVE" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')]" "$REGISTRY"
+  yq eval -i ".agents.${agent}.forbidden = [$(echo "$FORBIDDEN" | tr '\n' ',' | sed 's/,$//' | sed 's/,/, /g')]" "$REGISTRY"
+
+  echo "  ✓ $agent enriched"
+done
+
+echo "✓ Registry enrichment complete"
+echo "  Backup: ${REGISTRY}.backup"
+echo "  Updated: $REGISTRY"
+echo ""
+echo "NEXT STEP: Manual validation required for responsibilities field"
+echo "  Run: vim $REGISTRY"
+echo "  Validate each agent's responsibilities array for accuracy"
+        ]]></code>
+        <gotcha>
+          yq array formatting requires careful quoting to preserve YAML structure.
+          Empty arrays should remain as [] not null.
+        </gotcha>
+        <best_practice>
+          Run validation after enrichment: scripts/validate-registry.sh
+        </best_practice>
+      </component>
+    </implementation>
+
+    <acceptance_criteria>
+      <criterion>All 27 agents have delegates_to populated (empty array for leaf agents)</criterion>
+      <criterion>All 27 agents have cannot_access populated (path restrictions extracted)</criterion>
+      <criterion>Test-Writer agent has exclusive_access: [tests/**]</criterion>
+      <criterion>All 27 agents have forbidden populated (action restrictions extracted)</criterion>
+      <criterion>Manual validation confirms responsibilities accuracy for 27 agents</criterion>
+      <criterion>scripts/validate-registry.sh passes with 0 errors</criterion>
+    </acceptance_criteria>
+  </final_plan>
+
+  <research_trail>
+    <source type="docs" url="/srv/projects/instructor-workflow/docs/.scratch/research-system-audit/modular-prompting-architecture.md">
+      Section 8.1 (Registry Enrichment Strategy) - Extraction patterns documented
+    </source>
+    <source type="code" url="/srv/projects/instructor-workflow/agents/registry.yaml">
+      Current registry state - 27 agents with empty optional fields
+    </source>
+    <source type="code" url="/srv/projects/traycer-enforcement-framework/docs/agents/planning/planning-agent.md">
+      Sample extraction - Planning Agent delegation patterns (lines 89-124)
+    </source>
+    <source type="code" url="/srv/projects/traycer-enforcement-framework/docs/agents/backend/backend-agent.md">
+      Sample extraction - Backend Agent test file restrictions (lines 74-84)
+    </source>
+    <source type="code" url="/srv/projects/traycer-enforcement-framework/docs/agents/researcher/researcher-agent.md">
+      Sample extraction - Researcher Agent forbidden actions (lines 429-434)
+    </source>
+  </research_trail>
+</research_output>
