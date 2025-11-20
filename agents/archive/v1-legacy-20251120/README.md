@@ -2,7 +2,7 @@
 
 **Archive Date**: 2025-11-20
 **Reason**: V2 Agent Architecture Migration (Task A7)
-**Total Archived**: 33 directories
+**Total Archived**: 32 directories
 
 ## Why These Were Archived
 
@@ -20,7 +20,7 @@ These directories represent the V1 agent architecture that was replaced by the c
 - Hook-based settings.json schema (`.claude/hooks/auto-deny.py`)
 - Single source of truth: `agents/registry.yaml`
 
-## Archived Directories (33 Total)
+## Archived Directories (32 Total)
 
 **Implementation Agents** (22 duplicates - canonical equivalents exist):
 - action → DEPRECATED (replaced by frontend-agent, backend-agent, devops-agent)
@@ -46,7 +46,7 @@ These directories represent the V1 agent architecture that was replaced by the c
 - traefik → traefik-agent
 - traycer → traycer-agent
 
-**Special Agents** (8 assessed, minimal activity):
+**Special Agents** (7 assessed, minimal activity):
 - aws-cli (minimal git activity, persona outdated)
 - dragonfly (minimal activity, needs re-assessment for agent memory backend)
 - git-gitlab (no critical functionality gap)
@@ -54,14 +54,13 @@ These directories represent the V1 agent architecture that was replaced by the c
 - mem0 (minimal activity)
 - plane (minimal activity)
 - qdrant (minimal activity)
-- vllm (minimal activity, LLM serving abstraction available elsewhere)
 
 **Platform Agents** (2 old-style):
 - unifios → unifios-agent
 - unraid → unraid-agent
 
-**Special Case** (1):
-- vllm (minimal activity, LLM serving abstraction available via vllm-agent)
+**Test Artifact** (1):
+- totally-invalid-agent-xyz-999 (integration test artifact from Task A5)
 
 ## Recovery Instructions
 
@@ -92,7 +91,7 @@ Canonical persona definitions live in:
 
 **Why Archive (Not Delete)**:
 - Psychological safety for recovery if needed
-- Negligible storage cost (~600KB for 33 directories)
+- Negligible storage cost (~500KB for 32 directories)
 - Git history accessible via archive metadata
 - Industry best practice (kubernetes-sigs, docker-library)
 
@@ -102,7 +101,7 @@ Canonical persona definitions live in:
 ## Current Agent Count
 
 **Canonical Agents**: 27 (all in `agents/registry.yaml`)
-**Archived Directories**: 33
+**Archived Directories**: 32
 **Active Directories**: 28 (27 canonical + 1 archive/)
 
 ---
