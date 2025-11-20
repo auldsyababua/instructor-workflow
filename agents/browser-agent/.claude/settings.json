@@ -1,25 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Performs browser-based testing and interactions",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep",
-  "mcp__chrome-devtools"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/browser-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/browser-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Browser Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Browser Agent",
+    "type": "multi-agent-system",
+    "description": "Performs browser-based testing and interactions"
   }
 }

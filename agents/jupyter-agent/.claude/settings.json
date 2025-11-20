@@ -1,24 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Jupyter Lab/Notebook operations, kernel management, AI/ML workflows, GPU integration",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/jupyter-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/jupyter-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Jupyter Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Jupyter Agent",
+    "type": "multi-agent-system",
+    "description": "Jupyter Lab/Notebook operations, kernel management, AI/ML workflows, GPU integration"
   }
 }

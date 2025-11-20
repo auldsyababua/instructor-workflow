@@ -1,24 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Prometheus metrics collection, PromQL queries, alerting rules, TSDB management",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/prometheus-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/prometheus-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Prometheus Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Prometheus Agent",
+    "type": "multi-agent-system",
+    "description": "Prometheus metrics collection, PromQL queries, alerting rules, TSDB management"
   }
 }

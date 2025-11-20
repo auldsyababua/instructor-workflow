@@ -1,25 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Specialized agent for Frappe Cloud and ERPNext administration using Bench CLI",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep",
-  "Task"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/frappe-erpnext-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/frappe-erpnext-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Frappe Erpnext Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Frappe Erpnext Agent",
+    "type": "multi-agent-system",
+    "description": "Specialized agent for Frappe Cloud and ERPNext administration using Bench CLI"
   }
 }

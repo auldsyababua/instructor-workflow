@@ -1,24 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Manages infrastructure and deployment operations",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/devops-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/devops-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Devops Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Devops Agent",
+    "type": "multi-agent-system",
+    "description": "Manages infrastructure and deployment operations"
   }
 }

@@ -1,27 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Expert software architect planner. Use PROACTIVELY for all stack and architecture research and selection.",
-  "permissions": {
-    "allow": [
-  "Write",
-  "Read",
-  "Glob",
-  "Grep",
-  "WebSearch",
-  "WebFetch",
-  "mcp__ref",
-  "mcp__exasearch",
-  "mcp__perplexity-ask"
-],
-    "deny": ["Write(src/**)","Edit(src/**)","Write(tests/**)","Edit(tests/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/software-architect/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/software-architect/.claude/hooks/auto-deny.py",
+      "description": "Enforce Software Architect directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Software Architect",
+    "type": "multi-agent-system",
+    "description": "Expert software architect planner. Use PROACTIVELY for all stack and architecture research and selection."
   }
 }

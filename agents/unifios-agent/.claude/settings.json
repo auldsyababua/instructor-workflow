@@ -1,26 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "UniFi OS management and configuration specialist. Manages UniFi network devices, controllers, and Dream Machine configurations. Use for UniFi Dream Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall rules, wireless settings, network topology planning, security policy configuration, and performance optimization. Expert in UniFi switches, access points, gateways, controller management, and backup/restore operations.",
-  "permissions": {
-    "allow": [
-  "Read",
-  "Write",
-  "Edit",
-  "Bash",
-  "Glob",
-  "Grep",
-  "WebFetch",
-  "mcp__ref"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/unifios-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/unifios-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Unifios Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Unifios Agent",
+    "type": "multi-agent-system",
+    "description": "UniFi OS management and configuration specialist. Manages UniFi network devices, controllers, and Dream Machine configurations. Use for UniFi Dream Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall rules, wireless settings, network topology planning, security policy configuration, and performance optimization. Expert in UniFi switches, access points, gateways, controller management, and backup/restore operations."
   }
 }

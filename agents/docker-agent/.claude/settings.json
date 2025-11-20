@@ -1,25 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Docker/Docker Compose operations, container management, resource monitoring, debugging, and infrastructure deployment",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep",
-  "WebFetch"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/docker-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/docker-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Docker Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Docker Agent",
+    "type": "multi-agent-system",
+    "description": "Docker/Docker Compose operations, container management, resource monitoring, debugging, and infrastructure deployment"
   }
 }

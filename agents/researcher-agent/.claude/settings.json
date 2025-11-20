@@ -1,27 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Gathers information and provides technical research",
-  "permissions": {
-    "allow": [
-  "Write",
-  "Read",
-  "Glob",
-  "Grep",
-  "WebSearch",
-  "WebFetch",
-  "mcp__ref",
-  "mcp__exasearch",
-  "mcp__perplexity-ask"
-],
-    "deny": ["Write(src/**)","Edit(src/**)","Write(tests/**)","Edit(tests/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/researcher-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/researcher-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Researcher Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Researcher Agent",
+    "type": "multi-agent-system",
+    "description": "Gathers information and provides technical research"
   }
 }
