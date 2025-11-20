@@ -61,51 +61,44 @@ tmux attach -t iw-researcher
 
 ```
 instructor-workflow/
-├── agents/
-│   ├── planning/              # Planning Agent workspace
-│   │   ├── .claude/
-│   │   │   ├── settings.json  # Directory-scoped permissions
-│   │   │   └── hooks/         # Audit hooks (Layer 3)
-│   │   └── CLAUDE.md          # Behavioral directives (Layer 4)
-│   └── researcher/            # Researcher Agent workspace
-│       ├── .claude/
-│       │   ├── settings.json  # Research tool permissions
-│       │   └── hooks/
-│       └── CLAUDE.md
+├── agents/                    # 26 canonical agents (agents/*-agent/ pattern)
+│   ├── archive/
+│   │   └── v1-legacy-20251120/      # Archived legacy directories (23 duplicates)
+│   │       └── README.md             # Archive documentation
+│   ├── *-agent/               # 26 canonical agents
+│   │   ├── planning-agent/
+│   │   ├── backend-agent/
+│   │   ├── frontend-agent/
+│   │   ├── devops-agent/
+│   │   └── ... (22 more agents)
+│   ├── [special]/             # Non-canonical agents (aws-cli, dragonfly, etc)
+│   └── registry.yaml          # Single source of truth for agent definitions
 ├── docs/
 │   ├── architecture/          # Architecture documentation
-│   │   ├── adr/              # Architecture Decision Records
+│   │   ├── adr/              # Architecture Decision Records (ADR-001, ADR-002)
 │   │   └── system-design/    # Component diagrams, specifications
 │   ├── .scratch/             # Working notes and audit logs
+│   │   ├── migration-v2/     # V2 migration documentation
 │   │   ├── sessions/         # Native Orchestrator workspace (future)
 │   │   ├── general-tracking/ # General tracking artifacts
 │   │   └── archive/          # Completed work retention
 │   └── shared-ref-docs/      # Agent reference materials
-├── handoffs/                 # Agent coordination (validated JSON)
 ├── scripts/
 │   ├── setup/                # Installation scripts
-│   │   ├── download_skills.sh
-│   │   └── download_document_skills.sh
 │   ├── tracking/             # PR/git utilities
-│   │   ├── create_pr.py
-│   │   ├── create_pr_v2.sh
-│   │   └── tracking_pr5_extraction.py
 │   ├── validation/           # Test/verification scripts
-│   │   ├── quick_test.py
-│   │   ├── verify_fix.py
-│   │   ├── verify_fixes.py
-│   │   ├── run_tests.sh
-│   │   └── run_validation_tests.sh
-│   ├── archive/              # Archived one-off scripts
-│   │   └── one-off-git-executors/
-│   ├── validate_handoff.py   # Instructor validation (Layer 5)
-│   ├── spawn-*.sh            # tmux agent spawning
-│   └── tef-status.sh         # Agent status monitor
+│   ├── native-orchestrator/  # tmux-based session management
+│   └── archive/              # Archived one-off scripts
 ├── skills/                   # Agent skills (58+ skills)
+├── tests/                    # Integration test suite
 ├── reference/                # External reference materials
 ├── logs/                     # Agent execution logs
 └── .project-context.md       # Project configuration and patterns
 ```
+
+**Agent Count**: 26 canonical agents (action-agent deprecated, specialized agents: frontend, backend, devops)
+**Migration Status**: V2 Complete (2025-11-20) - See [ADR-002](docs/architecture/adr/002-v2-agent-migration.md)
+**Archive Location**: `agents/archive/v1-legacy-20251120/` (23 duplicate directories)
 
 ## Agent Launch Pattern
 
@@ -141,10 +134,13 @@ Test enforcement layers:
 
 ## Known Limitations (PopOS 22.04)
 
-- **Hook system unreliable** (4/10 reliability on Ubuntu-based systems)
 - **No per-agent MCP isolation** (use shared MCP with tool filtering)
 - **gnome-terminal issues** (use kitty or alacritry instead)
-- **Hooks require absolute paths** (use `$CLAUDE_PROJECT_DIR`)
+
+**CORRECTED** (2025-11-13):
+- Hook system is **RELIABLE** on PopOS 22.04 (contrary to initial documentation)
+- Validated 100% success rate with PreToolUse hooks and exit code 2 blocking
+- Hooks work with absolute paths using string containment matching
 
 See `.project-context.md` for complete architecture details and workarounds.
 
