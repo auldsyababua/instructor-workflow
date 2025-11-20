@@ -89,6 +89,11 @@ Canonical persona definitions live in:
 
 **Architecture Decision Record**: See ADR-002 in `docs/architecture/adr/002-v2-agent-migration.md`
 
+**V2 Migration Context**:
+- **V2 Canonical Agents**: 26 specialized agents + 1 orchestrator (traycer-agent) = 27 total
+- **V1 Archived Agents**: 32 legacy directories (22 duplicates + 7 special + 1 test artifact + 2 platform agents)
+- **Special Status Agents**: 7 archived pending disposition assessment (dragonfly, mem0, qdrant, aws-cli, git-gitlab, mcp-server-builder, plane)
+
 **Why Archive (Not Delete)**:
 - Psychological safety for recovery if needed
 - Negligible storage cost (~500KB for 32 directories)
@@ -100,9 +105,9 @@ Canonical persona definitions live in:
 
 ## Current Agent Count
 
-**Canonical Agents**: 27 (all in `agents/registry.yaml`)
-**Archived Directories**: 32
-**Active Directories**: 28 (27 canonical + 1 archive/)
+**V2 Canonical Agents**: 26 specialized agents + 1 orchestrator (traycer-agent) = 27 total
+**V1 Archived Directories**: 32 (including test artifact and special agents)
+**Active Directories**: 28 (27 canonical + 1 archive/) in registry
 
 ---
 
