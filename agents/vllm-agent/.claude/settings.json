@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Deploy and manage vLLM inference server for high-performance LLM serving with OpenAI-compatible API, model management, performance optimization, and integration with agentic workflows",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep"
+],
+    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/vllm-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

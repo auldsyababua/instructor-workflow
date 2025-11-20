@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Manage Traefik v3 reverse proxy configuration, routing rules, middleware chains, and service discovery for Docker-based infrastructure",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep"
+],
+    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/traefik-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

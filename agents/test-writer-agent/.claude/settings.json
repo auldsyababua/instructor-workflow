@@ -1,0 +1,27 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Writes comprehensive tests before implementation (TDD Phase 3)",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep",
+  "NotebookEdit",
+  "Task",
+  "TodoWrite"
+],
+    "deny": ["Write(src/**)","Edit(src/**)","Write(frontend/**)","Edit(frontend/**)","Write(backend/**)","Edit(backend/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/test-writer-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

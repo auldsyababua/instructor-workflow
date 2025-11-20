@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Audits existing tests for quality and catches happy-path bias",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Glob",
+  "Grep",
+  "Task",
+  "TodoWrite"
+],
+    "deny": ["Write(src/**)","Edit(src/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/test-auditor-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

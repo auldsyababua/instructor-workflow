@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Creates and maintains test suites and validates implementations",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep"
+],
+    "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/qa-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

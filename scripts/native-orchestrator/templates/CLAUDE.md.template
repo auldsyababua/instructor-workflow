@@ -1,0 +1,62 @@
+# ${AGENT_DISPLAY_NAME}
+
+**Persona**: See `${PERSONA_PATH}` for full persona definition.
+
+**Project Context**: Read `.project-context.md` in the project root.
+
+---
+
+## Tool Restrictions
+
+**Allowed Tools**:
+${AGENT_TOOLS_LIST}
+
+**Cannot Access**:
+${AGENT_CANNOT_ACCESS_LIST}
+
+**Exclusive Access**:
+${AGENT_EXCLUSIVE_ACCESS_LIST}
+
+---
+
+## Delegation Rules
+
+${AGENT_DELEGATION_RULES}
+
+---
+
+## Behavioral Directives
+
+⚠️ **CRITICAL**: You are running in a multi-agent system with strict enforcement layers.
+
+**Layer 1 - Tool Restrictions**: Your tool permissions are defined in `.claude/settings.json`
+
+**Layer 2 - Directory Permissions**: Enforce via hooks (PreToolUse auto-deny)
+
+**Layer 3 - Hook Validation**: Blocks operations before execution
+
+**Layer 4 - Behavioral Directives**: THIS SECTION (reinforcement)
+
+**Layer 5 - Instructor Validation**: Pydantic models validate handoffs
+
+### What You MUST Do
+
+${AGENT_RESPONSIBILITIES_LIST}
+
+### What You MUST NOT Do
+
+${AGENT_FORBIDDEN_LIST}
+
+### When You Need Help
+
+If you encounter a task outside your responsibilities:
+1. ✅ Acknowledge the boundary
+2. ✅ Suggest appropriate specialist agent
+3. ✅ Use Task tool to delegate (if you have delegation rights)
+4. ❌ DO NOT attempt work outside your scope
+
+---
+
+**Generated from**: `agents/registry.yaml` (Task A4)
+**Last Built**: ${BUILD_TIMESTAMP}
+**DO NOT EDIT MANUALLY** - Run `./scripts/native-orchestrator/generate-configs.sh` to rebuild

@@ -1,0 +1,17 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "${AGENT_DESCRIPTION}",
+  "permissions": {
+    "allow": ${AGENT_TOOLS},
+    "deny": ${AGENT_DENY_PATTERNS}
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "${PROJECT_ROOT}/agents/${AGENT_NAME}/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Manages project tracking and documentation",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep",
+  "mcp__linear-server"
+],
+    "deny": []
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/tracking-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

@@ -60,6 +60,41 @@ get_persona_file() {
     echo "$PERSONA_FILE"
 }
 
+# Validate agent config matches registry (drift detection)
+validate_agent_config() {
+    local AGENT_NAME="$1"
+    local SETTINGS_FILE="${PROJECT_ROOT}/agents/${AGENT_NAME}/.claude/settings.json"
+    local REGISTRY="${PROJECT_ROOT}/agents/registry.yaml"
+
+    # Check 1: Config exists
+    if [[ ! -f "$SETTINGS_FILE" ]]; then
+        echo -e "${RED}Error: Config not found: $SETTINGS_FILE${NC}" >&2
+        echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
+        return 1
+    fi
+
+    # Check 2: Config is valid JSON
+    if ! jq empty "$SETTINGS_FILE" 2>/dev/null; then
+        echo -e "${RED}Error: Invalid JSON in $SETTINGS_FILE${NC}" >&2
+        echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
+        return 1
+    fi
+
+    # Check 3: Tools match registry (drift detection)
+    local file_tools=$(jq -r '.permissions.allow | sort | join(",")' "$SETTINGS_FILE")
+    local registry_tools=$(yq -o json ".agents.${AGENT_NAME}.tools | sort | join(\",\")" "$REGISTRY")
+
+    if [[ "$file_tools" != "$registry_tools" ]]; then
+        echo -e "${YELLOW}⚠️  Drift detected: $AGENT_NAME config differs from registry${NC}" >&2
+        echo "  File: $file_tools" >&2
+        echo "  Registry: $registry_tools" >&2
+        echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
+        return 1
+    fi
+
+    echo -e "${GREEN}✅ $AGENT_NAME config validated${NC}"
+}
+
 # Display usage information
 usage() {
     cat << EOF
@@ -102,6 +137,11 @@ cmd_create() {
         else
             grep '^  [a-z-]*:$' "$REGISTRY" | sed 's/://g' | sed 's/^  /  - /' >&2
         fi
+        exit 1
+    fi
+
+    # Validate agent config (NEW - drift detection)
+    if ! validate_agent_config "$AGENT_NAME"; then
         exit 1
     fi
 

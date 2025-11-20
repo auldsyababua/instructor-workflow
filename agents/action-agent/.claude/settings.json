@@ -1,0 +1,24 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Executes implementation work and coordinates multi-step operations",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep"
+],
+    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/action-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}

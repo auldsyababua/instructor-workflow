@@ -1,0 +1,38 @@
+{
+  "model": "claude-sonnet-4-20250514",
+  "description": "Breaks down epics and creates implementation plans",
+  "permissions": {
+    "allow": [
+  "Bash",
+  "Read",
+  "Write",
+  "Edit",
+  "Glob",
+  "Grep",
+  "NotebookEdit",
+  "WebFetch",
+  "WebSearch",
+  "Task",
+  "TodoWrite",
+  "SlashCommand",
+  "mcp__linear-server",
+  "mcp__github",
+  "mcp__supabase",
+  "mcp__ref",
+  "mcp__exasearch",
+  "mcp__perplexity-ask",
+  "mcp__claude-reviewer",
+  "mcp__chrome-devtools"
+],
+    "deny": ["Write(src/**)","Edit(src/**)","Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)"]
+  },
+  "hooks": {
+    "PreToolUse": [{
+      "matcher": "*",
+      "hooks": [{
+        "type": "command",
+        "command": "/srv/projects/instructor-workflow/agents/planning-agent/.claude/hooks/auto-deny.py"
+      }]
+    }]
+  }
+}
