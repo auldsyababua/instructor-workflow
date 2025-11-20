@@ -11,8 +11,23 @@
 
 set -euo pipefail
 
+# Environment variable validation
+if [ -z "${PROJECT_ROOT:-}" ]; then
+  echo "ERROR: PROJECT_ROOT not set. Set via: export PROJECT_ROOT=/srv/projects/instructor-workflow" >&2
+  exit 1
+fi
+
+if [ ! -d "$PROJECT_ROOT" ]; then
+  echo "ERROR: PROJECT_ROOT directory does not exist: $PROJECT_ROOT" >&2
+  exit 1
+fi
+
+# Validate TMUX_SOCKET_OVERRIDE if set (optional variable)
+if [ -n "${TMUX_SOCKET_OVERRIDE:-}" ] && [ ! -S "$TMUX_SOCKET_OVERRIDE" ]; then
+  echo "WARNING: TMUX_SOCKET_OVERRIDE set but socket not found: $TMUX_SOCKET_OVERRIDE" >&2
+fi
+
 # Configuration
-PROJECT_ROOT="${PROJECT_ROOT:-/srv/projects/instructor-workflow}"
 # TEF_ROOT configurable via environment variable (fallback to standard path)
 # Phase 2 (Task A4): This will be replaced with template compilation
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
@@ -37,7 +52,7 @@ agent_exists() {
 
     # Try yq first (faster, more reliable)
     if command -v yq &> /dev/null; then
-        yq ".agents.${AGENT_NAME}" "$REGISTRY" > /dev/null 2>&1
+        AGENT_NAME_YQ="$AGENT_NAME" yq '.agents.[env(AGENT_NAME_YQ)]' "$REGISTRY" > /dev/null 2>&1
         return $?
     else
         # Fallback to bash grep (fragile but works)
@@ -87,7 +102,7 @@ validate_agent_config() {
     # Drift detection will be re-enabled when hook integrity checking is implemented
     #
     # local file_tools=$(jq -r '.permissions.allow | sort | join(",")' "$SETTINGS_FILE")
-    # local registry_tools=$(yq -o json ".agents.${AGENT_NAME}.tools | sort | join(\",\")" "$REGISTRY")
+    # local registry_tools=$(AGENT_NAME_YQ="$AGENT_NAME" yq -o json '.agents.[env(AGENT_NAME_YQ)].tools | sort | join(",")' "$REGISTRY")
     #
     # if [[ "$file_tools" != "$registry_tools" ]]; then
     #     echo -e "${YELLOW}⚠️  Drift detected: $AGENT_NAME config differs from registry${NC}" >&2
