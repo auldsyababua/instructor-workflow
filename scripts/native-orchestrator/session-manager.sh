@@ -12,7 +12,7 @@
 set -euo pipefail
 
 # Configuration
-PROJECT_ROOT="/srv/projects/instructor-workflow"
+PROJECT_ROOT="${PROJECT_ROOT:-/srv/projects/instructor-workflow}"
 # TEF_ROOT configurable via environment variable (fallback to standard path)
 # Phase 2 (Task A4): This will be replaced with template compilation
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
@@ -76,7 +76,8 @@ validate_agent_config() {
     # Check 2: Config is valid JSON
     if ! jq empty "$SETTINGS_FILE" 2>/dev/null; then
         echo -e "${RED}Error: Invalid JSON in $SETTINGS_FILE${NC}" >&2
-        echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
+        echo "Config file is corrupted or malformed." >&2
+        echo "Regenerate config with: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
         return 1
     fi
 

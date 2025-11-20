@@ -49,6 +49,37 @@ check_dependencies() {
   fi
 }
 
+# Validate registry file
+validate_registry() {
+  if [[ ! -f "$REGISTRY" ]]; then
+    echo -e "${RED}Error: Registry not found: $REGISTRY${NC}" >&2
+    exit 1
+  fi
+
+  # Check YAML syntax
+  if ! yq eval . "$REGISTRY" > /dev/null 2>&1; then
+    echo -e "${RED}Error: Invalid YAML in registry${NC}" >&2
+    echo "File: $REGISTRY" >&2
+    echo "YAML parse error detected. Check for syntax errors." >&2
+    exit 1
+  fi
+}
+
+# Validate template files exist
+validate_templates() {
+  if [[ ! -f "$TEMPLATE_SETTINGS" ]]; then
+    echo -e "${RED}Error: Template not found: $TEMPLATE_SETTINGS${NC}" >&2
+    echo "Missing settings.json template" >&2
+    exit 1
+  fi
+
+  if [[ ! -f "$TEMPLATE_CLAUDE" ]]; then
+    echo -e "${RED}Error: Template not found: $TEMPLATE_CLAUDE${NC}" >&2
+    echo "Missing CLAUDE.md template" >&2
+    exit 1
+  fi
+}
+
 # Removed: map_deny_patterns function
 # Deny patterns are enforced via hooks (auto-deny.py), not settings.json schema
 
@@ -58,8 +89,9 @@ generate_agent_config() {
 
   echo "Generating config for: $agent_name"
 
-  # Validate agent exists in registry
-  if ! yq ".agents.${agent_name}" "$REGISTRY" > /dev/null 2>&1; then
+  # Validate agent exists in registry (using yq 'has' operator for robust checking)
+  local agent_exists=$(yq ".agents | has(\"${agent_name}\")" "$REGISTRY" 2>&1)
+  if [[ "$agent_exists" != "true" ]]; then
     echo -e "${RED}Error: Agent '$agent_name' not found in registry${NC}" >&2
     return 1
   fi
@@ -134,6 +166,8 @@ generate_agent_config() {
 # Main execution
 main() {
   check_dependencies
+  validate_registry
+  validate_templates
 
   if [[ $# -eq 0 || "$1" == "--all" ]]; then
     # Generate configs for all agents
