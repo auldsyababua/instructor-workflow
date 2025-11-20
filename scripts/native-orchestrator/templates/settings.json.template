@@ -1,17 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "${AGENT_DESCRIPTION}",
-  "permissions": {
-    "allow": ${AGENT_TOOLS},
-    "deny": ${AGENT_DENY_PATTERNS}
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "${PROJECT_ROOT}/agents/${AGENT_NAME}/.claude/hooks/auto-deny.py"
-      }]
+      "command": "${PROJECT_ROOT}/agents/${AGENT_NAME}/.claude/hooks/auto-deny.py",
+      "description": "Enforce ${AGENT_DISPLAY_NAME} directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "${PROJECT_ROOT}/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "${AGENT_DISPLAY_NAME}",
+    "type": "multi-agent-system",
+    "description": "${AGENT_DESCRIPTION}"
   }
 }

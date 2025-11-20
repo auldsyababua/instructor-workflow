@@ -1,25 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Coordinates agent workflows and manages project orchestration",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep",
-  "mcp__linear-server"
-],
-    "deny": []
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/traycer-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/traycer-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Traycer Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Traycer Agent",
+    "type": "multi-agent-system",
+    "description": "Coordinates agent workflows and manages project orchestration"
   }
 }

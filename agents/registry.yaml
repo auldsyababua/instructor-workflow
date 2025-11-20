@@ -3,6 +3,12 @@
 # Consumed by: session-manager.sh, build-prompts.sh, Planning Agent context generation
 # Validation: scripts/validate-registry.sh (pre-commit hook)
 #
+# AGENT COUNT CLARIFICATION:
+# - 26 Canonical Agents: Specialized domain agents with tool restrictions
+# - 1 Orchestrator Agent: traycer-agent (coordinator, not specialized)
+# - Total: 27 agents in registry
+# - Archived: 32 V1 legacy agents (see agents/archive/v1-legacy-20251120/README.md)
+#
 # Schema Reference:
 #   Required: name, display_name, description, model, tools
 #   Optional: delegates_to, cannot_access, exclusive_access, responsibilities, forbidden
@@ -37,31 +43,6 @@ agents:
       - Modify test files
       - Update Linear (Tracking Agent)
       - Git operations (Tracking Agent)
-
-  action-agent:
-    name: action-agent
-    display_name: "Action Agent"
-    description: "Executes implementation work and coordinates multi-step operations"
-    model: sonnet
-    tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-    delegates_to: []
-    cannot_access:
-      - tests/**
-      - test/**
-    exclusive_access: []
-    responsibilities:
-      - Execute implementation work (archived role)
-      - Coordinate multi-step operations
-      - Delegate to specialized agents when needed
-    forbidden:
-      - Modify test files (Test Writer owns tests)
-      - Update Linear (Tracking Agent)
 
   backend-agent:
     name: backend-agent

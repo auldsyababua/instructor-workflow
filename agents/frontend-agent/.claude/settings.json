@@ -1,24 +1,17 @@
 {
-  "model": "claude-sonnet-4-20250514",
-  "description": "Handles UI/UX implementation and client-side development",
-  "permissions": {
-    "allow": [
-  "Bash",
-  "Read",
-  "Write",
-  "Edit",
-  "Glob",
-  "Grep"
-],
-    "deny": ["Write(tests/**)","Edit(tests/**)","Write(test/**)","Edit(test/**)","Write(*.test.*)","Edit(*.test.*)","Write(*.spec.*)","Edit(*.spec.*)","Write(backend/**)","Edit(backend/**)"]
-  },
   "hooks": {
     "PreToolUse": [{
-      "matcher": "*",
-      "hooks": [{
-        "type": "command",
-        "command": "/srv/projects/instructor-workflow/agents/frontend-agent/.claude/hooks/auto-deny.py"
-      }]
+      "command": "/srv/projects/instructor-workflow/agents/frontend-agent/.claude/hooks/auto-deny.py",
+      "description": "Enforce Frontend Agent directory and tool restrictions"
     }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Frontend Agent",
+    "type": "multi-agent-system",
+    "description": "Handles UI/UX implementation and client-side development"
   }
 }

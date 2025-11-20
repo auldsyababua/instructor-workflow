@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [{
+      "command": "/srv/projects/instructor-workflow/agents/homelab-architect/.claude/hooks/auto-deny.py",
+      "description": "Enforce Homelab Architect directory and tool restrictions"
+    }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Homelab Architect",
+    "type": "multi-agent-system",
+    "description": "Expert homelab network architect for Colin's Mac + Workhorse AI workstation. Use PROACTIVELY for any network topology, architecture, troubleshooting, segmentation, routing, DNS/DHCP, VLAN design, firewall policy, or infrastructure planning tasks. Already knows Colin's complete infrastructure (22 services, P2P 10GbE, VLAN 10 homelab, RTX 5090 GPU compute). Specializes in transforming chaotic home labs into production-grade, observable, maintainable networks for single operators."
+  }
+}

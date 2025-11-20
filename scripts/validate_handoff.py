@@ -55,8 +55,8 @@ class ResearchHandoff(BaseModel):
         return path
 
 class ImplementationHandoff(BaseModel):
-    """Validated handoff structure for Planning → Action (future)."""
-    target_agent: Literal["action-agent"] = "action-agent"
+    """Validated handoff structure for Planning → Implementation Specialists (frontend/backend/devops)."""
+    target_agent: Literal["frontend-agent", "backend-agent", "devops-agent"] = "backend-agent"
     task_description: str = Field(min_length=10, max_length=1000)
     context_files: List[Path] = Field(default_factory=list)
     deliverable_path: Path

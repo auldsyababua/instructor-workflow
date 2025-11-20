@@ -453,21 +453,7 @@ ENRICHMENT_DATA = {
         ]
     },
 
-    # Note: action-agent and qa-agent are archived
-    "action-agent": {
-        "delegates_to": [],
-        "cannot_access": ["tests/**", "test/**"],
-        "exclusive_access": [],
-        "responsibilities": [
-            "Execute implementation work (archived role)",
-            "Coordinate multi-step operations"
-        ],
-        "forbidden": [
-            "Modify test files (Test Writer owns tests)",
-            "Update Linear (Tracking Agent)"
-        ]
-    },
-
+    # Note: qa-agent archived; action-agent replaced by frontend/backend/devops-agent
     "qa-agent": {
         "delegates_to": [],
         "cannot_access": [],

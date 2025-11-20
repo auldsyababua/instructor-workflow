@@ -391,7 +391,9 @@ tools: Read, Grep, Glob, Bash
 
 **Common tool patterns**:
 - Research: `Read, Glob, Grep, WebSearch, WebFetch, mcp__ref__*, mcp__exasearch__*`
-- Implementation: `Read, Write, Edit, Bash, Glob, Grep`
+- Backend Implementation: `Read, Write, Edit, Bash, Glob, Grep`
+- Frontend Implementation: `Read, Write, Edit, Bash, Glob, Grep`
+- DevOps: `Read, Write, Edit, Bash, Glob, Grep`
 - QA/Testing: `Read, Bash, Glob, Grep`
 - Tracking: `Read, Write, Bash, mcp__linear-server__*, mcp__github__*`
 
@@ -656,7 +658,7 @@ Expected:
 - Run security validation
 - Check code standards
 - Provide structured feedback
-- Delegate fixes to Action Agent if needed
+- Delegate fixes to Backend/Frontend/DevOps agents if needed
 ```
 
 #### 5.2 Run Evaluations
@@ -819,7 +821,9 @@ This directory contains agent system prompts and supporting resources for the Tr
 
 | Agent | File | Purpose | Status |
 |-------|------|---------|--------|
-| Action Agent | `action-agent.md` | Executes implementation work and coordinates multi-step operations | ✅ Deployed |
+| Frontend Agent | `frontend-agent.md` | Implements UI/UX components and client-side logic | ✅ Deployed |
+| Backend Agent | `backend-agent.md` | Implements API endpoints and database operations | ✅ Deployed |
+| DevOps Agent | `devops-agent.md` | Manages infrastructure and deployment operations | ✅ Deployed |
 
 ## Agent Directory Structure
 
@@ -984,7 +988,7 @@ To deploy this agent manually:
 /agent-builder --audit
 
 # Audit single agent
-/agent-builder --audit --agent action-agent
+/agent-builder --audit --agent backend-agent
 
 # Audit with JSON output for CI/CD
 /agent-builder --audit --format json > audit-report.json
@@ -1008,7 +1012,7 @@ Agent-builder audit mode validates 5 compliance criteria:
 **Example**:
 ```
 ❌ FAIL: backend-agent.md - Duplicate YAML frontmatter detected (4 delimiters found, expected 2)
-✅ PASS: action-agent.md - Single YAML frontmatter block (2 delimiters)
+✅ PASS: frontend-agent.md - Single YAML frontmatter block (2 delimiters)
 ```
 
 **Remediation**: Remove duplicate YAML blocks, merge fields into first block if needed
@@ -1033,7 +1037,7 @@ Agent-builder audit mode validates 5 compliance criteria:
 
 **Example**:
 ```
-✅ PASS: action-agent.md - All required YAML fields present
+✅ PASS: backend-agent.md - All required YAML fields present
 ❌ FAIL: example-agent.md - Missing required field: allowed-tools
 ⚠️  WARN: devops-agent.md - Optional field 'friendly_name' in duplicate block
 ```
@@ -1122,9 +1126,9 @@ Agent-builder audit mode validates 5 compliance criteria:
 
 | Status | Count | Agents |
 |--------|-------|--------|
-| ✅ PASS | 7 | action-agent, qa-agent, researcher-agent, planning-agent, tracking-agent, traycer-agent, browser-agent |
+| ✅ PASS | 8 | frontend-agent, backend-agent, devops-agent, qa-agent, researcher-agent, planning-agent, tracking-agent, browser-agent |
 | ⚠️ WARN | 0 | (none) |
-| ❌ FAIL | 5 | backend-agent, debug-agent, devops-agent, frontend-agent, seo-agent |
+| ❌ FAIL | 4 | debug-agent, seo-agent, traycer-agent, software-architect |
 
 ---
 
@@ -1140,13 +1144,13 @@ Remove duplicate YAML block (lines 8-11). Merge `delegated_by` and `friendly_nam
 
 ---
 
-### ✅ PASS: action-agent.md
+### ✅ PASS: backend-agent.md
 
 **Status**: All checks passed
 - ✅ Check 1: Single YAML frontmatter block
 - ✅ Check 2: All required fields present (model, description, allowed-tools, recommended-skills)
 - ✅ Check 3: Project context reference found
-- ⚠️ Check 4: ref-docs directory empty (docs/agents/action-agent/ref-docs/)
+- ✅ Check 4: All ref-docs valid
 - ✅ Check 5: No script references
 
 ---
@@ -1276,9 +1280,9 @@ jobs:
 
 **Deferred Check**:
 - **Check 6 (Filename-Directory Matching)**: Not implemented due to mixed naming patterns
-  - Some agents use `action/` directories
-  - Others use `action-agent/` directories
-  - Will be enabled once canonical pattern is standardized
+  - Legacy agents use old directories (e.g., `backend/`, `frontend/`)
+  - Canonical agents use `*-agent/` directories (e.g., `backend-agent/`, `frontend-agent/`)
+  - Will be enabled once legacy migration is complete
 
 **Future Enhancements**:
 - Auto-remediation (`--fix` flag to auto-repair common issues)
@@ -1452,7 +1456,20 @@ Agent Builder Skill
 
 **Example**: QA Agent
 
-### Pattern 2: Execution Agent
+### Pattern 2: Implementation Agent
+
+**Components**:
+- **System prompt**: Execute implementation work for specific domain (frontend/backend/devops)
+- **Skills**: Domain-specific implementation patterns
+- **Commands**: Domain-specific commands (e.g., `/deploy`, `/build`, `/api-test`)
+- **Hooks**:
+  - PreToolUse: Validate domain boundaries (backend can't touch frontend/*)
+  - SessionStart: Load project context
+- **Tools**: Read, Write, Edit, Bash, Glob, Grep (domain-scoped)
+
+**Examples**: Backend Agent, Frontend Agent, DevOps Agent
+
+### Pattern 3: Execution Agent
 
 **Components**:
 - **System prompt**: Execute instructions verbatim
@@ -1465,7 +1482,7 @@ Agent Builder Skill
 
 **Example**: Tracking Agent
 
-### Pattern 3: Coordination Agent
+### Pattern 4: Coordination Agent
 
 **Components**:
 - **System prompt**: Delegate to specialists, never execute
@@ -1478,7 +1495,7 @@ Agent Builder Skill
 
 **Example**: Traycer
 
-### Pattern 4: Research Agent
+### Pattern 5: Research Agent
 
 **Components**:
 - **System prompt**: Gather evidence, analyze options
@@ -1489,7 +1506,7 @@ Agent Builder Skill
   - PostToolUse: Log sources consulted
 - **Tools**: WebSearch, WebFetch, Read, MCP tools
 
-### Pattern 5: Integration Agent (with MCPs)
+### Pattern 6: Integration Agent (with MCPs)
 
 **Components**:
 - **System prompt**: Document MCP tool usage, constraints, error handling

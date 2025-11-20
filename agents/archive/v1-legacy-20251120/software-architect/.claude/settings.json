@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [{
+      "command": "/srv/projects/instructor-workflow/agents/software-architect/.claude/hooks/auto-deny.py",
+      "description": "Enforce Software Architect directory and tool restrictions"
+    }]
+  },
+  "contextFiles": [
+    "CLAUDE.md",
+    "/srv/projects/instructor-workflow/.project-context.md"
+  ],
+  "projectInfo": {
+    "name": "Software Architect",
+    "type": "multi-agent-system",
+    "description": "Expert software architect planner. Use PROACTIVELY for all stack and architecture research and selection."
+  }
+}

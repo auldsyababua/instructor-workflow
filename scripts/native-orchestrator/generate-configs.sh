@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Configuration
-PROJECT_ROOT="/srv/projects/instructor-workflow"
+PROJECT_ROOT="${PROJECT_ROOT:-/srv/projects/instructor-workflow}"
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
 REGISTRY="${PROJECT_ROOT}/agents/registry.yaml"
 TEMPLATE_SETTINGS="${PROJECT_ROOT}/scripts/native-orchestrator/templates/settings.json.template"
@@ -49,32 +49,8 @@ check_dependencies() {
   fi
 }
 
-# Map cannot_access to deny patterns
-map_deny_patterns() {
-  local agent_name="$1"
-  local cannot_access=$(yq -o json ".agents.${agent_name}.cannot_access" "$REGISTRY")
-
-  if [[ "$cannot_access" == "null" || "$cannot_access" == "[]" ]]; then
-    echo "[]"
-    return
-  fi
-
-  # Convert path patterns to tool deny patterns
-  local deny_patterns="["
-  local first=true
-
-  while IFS= read -r path; do
-    if [[ "$first" == "true" ]]; then
-      first=false
-    else
-      deny_patterns+=","
-    fi
-    deny_patterns+="\"Write($path)\",\"Edit($path)\""
-  done < <(echo "$cannot_access" | jq -r '.[]')
-
-  deny_patterns+="]"
-  echo "$deny_patterns"
-}
+# Removed: map_deny_patterns function
+# Deny patterns are enforced via hooks (auto-deny.py), not settings.json schema
 
 # Generate config for single agent
 generate_agent_config() {
@@ -98,11 +74,8 @@ generate_agent_config() {
   export AGENT_DESCRIPTION=$(yq ".agents.${agent_name}.description" "$REGISTRY")
   export AGENT_MODEL=$(yq ".agents.${agent_name}.model" "$REGISTRY")
 
-  # Export tools as JSON array
-  export AGENT_TOOLS=$(yq -o json ".agents.${agent_name}.tools" "$REGISTRY")
-
-  # Export deny patterns (mapped from cannot_access)
-  export AGENT_DENY_PATTERNS=$(map_deny_patterns "$agent_name")
+  # Removed: AGENT_TOOLS and AGENT_DENY_PATTERNS exports
+  # Tools are documented in CLAUDE.md, enforced via hooks (auto-deny.py)
 
   # Export persona path
   export PERSONA_PATH="${TEF_ROOT}/docs/agents/${agent_name}/${agent_name}-agent.md"
