@@ -32,7 +32,6 @@ def load_persona_file(agent_name: str) -> Optional[str]:
 
     # Map registry names to persona directory names
     name_mapping = {
-        'action-agent': 'action',
         'qa-agent': 'qa',
         'docker-agent': 'docker-agent',
         'frappe-erpnext-agent': 'frappe-erpnext',
