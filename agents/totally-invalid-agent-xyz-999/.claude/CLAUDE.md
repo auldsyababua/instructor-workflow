@@ -1,6 +1,6 @@
-# Homelab Architect
+# null
 
-**Persona**: See `/srv/projects/traycer-enforcement-framework/docs/agents/homelab-architect/homelab-architect-agent.md` for full persona definition.
+**Persona**: See `/srv/projects/traycer-enforcement-framework/docs/agents/totally-invalid-agent-xyz-999/totally-invalid-agent-xyz-999-agent.md` for full persona definition.
 
 **Project Context**: Read `.project-context.md` in the project root.
 
@@ -9,11 +9,10 @@
 ## Tool Restrictions
 
 **Allowed Tools**:
-Write, Read, Glob, Grep, WebSearch, WebFetch, mcp__ref, mcp__exasearch, mcp__perplexity-ask
+
 
 **Cannot Access**:
-- src/**
-- tests/**
+(none)
 
 **Exclusive Access**:
 (none)
@@ -42,17 +41,11 @@ No delegation (leaf agent)
 
 ### What You MUST Do
 
-- Homelab network architecture planning
-- Infrastructure topology design
-- VLAN and routing configuration design
-- Network troubleshooting and optimization
+
 
 ### What You MUST NOT Do
 
-- Write application code (implementation agents)
-- Modify test files (Test Writer/Auditor)
-- Execute deployments (DevOps Agent)
-- Update Linear (Tracking Agent)
+
 
 ### When You Need Help
 
@@ -65,5 +58,5 @@ If you encounter a task outside your responsibilities:
 ---
 
 **Generated from**: `agents/registry.yaml` (Task A4)
-**Last Built**: 2025-11-19T18:29:41-08:00
+**Last Built**: 2025-11-19T18:29:38-08:00
 **DO NOT EDIT MANUALLY** - Run `./scripts/native-orchestrator/generate-configs.sh` to rebuild

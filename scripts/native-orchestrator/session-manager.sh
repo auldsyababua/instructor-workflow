@@ -17,7 +17,7 @@ PROJECT_ROOT="/srv/projects/instructor-workflow"
 # Phase 2 (Task A4): This will be replaced with template compilation
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
 REGISTRY="${PROJECT_ROOT}/agents/registry.yaml"
-TMUX_SOCKET="iw-orchestrator"
+TMUX_SOCKET="${TMUX_SOCKET_OVERRIDE:-iw-orchestrator}"
 SESSION_PREFIX="iw-"
 
 # Colors for output
@@ -81,16 +81,20 @@ validate_agent_config() {
     fi
 
     # Check 3: Tools match registry (drift detection)
-    local file_tools=$(jq -r '.permissions.allow | sort | join(",")' "$SETTINGS_FILE")
-    local registry_tools=$(yq -o json ".agents.${AGENT_NAME}.tools | sort | join(\",\")" "$REGISTRY")
-
-    if [[ "$file_tools" != "$registry_tools" ]]; then
-        echo -e "${YELLOW}⚠️  Drift detected: $AGENT_NAME config differs from registry${NC}" >&2
-        echo "  File: $file_tools" >&2
-        echo "  Registry: $registry_tools" >&2
-        echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
-        return 1
-    fi
+    # TODO: Re-implement drift detection for new schema (hooks-based)
+    # New schema doesn't store tools in settings.json (enforced via hooks)
+    # Drift detection will be re-enabled when hook integrity checking is implemented
+    #
+    # local file_tools=$(jq -r '.permissions.allow | sort | join(",")' "$SETTINGS_FILE")
+    # local registry_tools=$(yq -o json ".agents.${AGENT_NAME}.tools | sort | join(\",\")" "$REGISTRY")
+    #
+    # if [[ "$file_tools" != "$registry_tools" ]]; then
+    #     echo -e "${YELLOW}⚠️  Drift detected: $AGENT_NAME config differs from registry${NC}" >&2
+    #     echo "  File: $file_tools" >&2
+    #     echo "  Registry: $registry_tools" >&2
+    #     echo "Run: ./scripts/native-orchestrator/generate-configs.sh $AGENT_NAME" >&2
+    #     return 1
+    # fi
 
     echo -e "${GREEN}✅ $AGENT_NAME config validated${NC}"
 }

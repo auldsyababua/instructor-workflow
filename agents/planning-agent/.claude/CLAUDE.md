@@ -78,5 +78,5 @@ If you encounter a task outside your responsibilities:
 ---
 
 **Generated from**: `agents/registry.yaml` (Task A4)
-**Last Built**: 2025-11-19T17:38:47-08:00
+**Last Built**: 2025-11-19T18:29:54-08:00
 **DO NOT EDIT MANUALLY** - Run `./scripts/native-orchestrator/generate-configs.sh` to rebuild

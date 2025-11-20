@@ -7,7 +7,7 @@
 set -euo pipefail
 
 # Configuration
-PROJECT_ROOT="/srv/projects/instructor-workflow"
+PROJECT_ROOT="${PROJECT_ROOT:-/srv/projects/instructor-workflow}"
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
 REGISTRY="${PROJECT_ROOT}/agents/registry.yaml"
 TEMPLATE_SETTINGS="${PROJECT_ROOT}/scripts/native-orchestrator/templates/settings.json.template"
