@@ -6,8 +6,18 @@
 
 set -euo pipefail
 
+# Environment variable validation
+if [ -z "${PROJECT_ROOT:-}" ]; then
+  echo "ERROR: PROJECT_ROOT not set. Set via: export PROJECT_ROOT=/srv/projects/instructor-workflow" >&2
+  exit 1
+fi
+
+if [ ! -d "$PROJECT_ROOT" ]; then
+  echo "ERROR: PROJECT_ROOT directory does not exist: $PROJECT_ROOT" >&2
+  exit 1
+fi
+
 # Configuration
-PROJECT_ROOT="${PROJECT_ROOT:-/srv/projects/instructor-workflow}"
 TEF_ROOT="${TEF_ROOT:-/srv/projects/traycer-enforcement-framework}"
 REGISTRY="${PROJECT_ROOT}/agents/registry.yaml"
 TEMPLATE_SETTINGS="${PROJECT_ROOT}/scripts/native-orchestrator/templates/settings.json.template"
@@ -59,7 +69,7 @@ generate_agent_config() {
   echo "Generating config for: $agent_name"
 
   # Validate agent exists in registry
-  if ! yq ".agents.${agent_name}" "$REGISTRY" > /dev/null 2>&1; then
+  if ! AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)]' "$REGISTRY" > /dev/null 2>&1; then
     echo -e "${RED}Error: Agent '$agent_name' not found in registry${NC}" >&2
     return 1
   fi
@@ -69,10 +79,10 @@ generate_agent_config() {
   mkdir -p "${agent_dir}/.claude"
 
   # Extract metadata from registry
-  export AGENT_NAME=$(yq ".agents.${agent_name}.name" "$REGISTRY")
-  export AGENT_DISPLAY_NAME=$(yq ".agents.${agent_name}.display_name" "$REGISTRY")
-  export AGENT_DESCRIPTION=$(yq ".agents.${agent_name}.description" "$REGISTRY")
-  export AGENT_MODEL=$(yq ".agents.${agent_name}.model" "$REGISTRY")
+  export AGENT_NAME=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].name' "$REGISTRY")
+  export AGENT_DISPLAY_NAME=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].display_name' "$REGISTRY")
+  export AGENT_DESCRIPTION=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].description' "$REGISTRY")
+  export AGENT_MODEL=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].model' "$REGISTRY")
 
   # Removed: AGENT_TOOLS and AGENT_DENY_PATTERNS exports
   # Tools are documented in CLAUDE.md, enforced via hooks (auto-deny.py)
@@ -87,31 +97,31 @@ generate_agent_config() {
   export BUILD_TIMESTAMP=$(date -Iseconds)
 
   # Format arrays for markdown
-  export AGENT_TOOLS_LIST=$(yq ".agents.${agent_name}.tools | join(\", \")" "$REGISTRY")
+  export AGENT_TOOLS_LIST=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].tools | join(", ")' "$REGISTRY")
 
-  local cannot_access=$(yq -o json ".agents.${agent_name}.cannot_access" "$REGISTRY")
+  local cannot_access=$(AGENT_NAME_YQ="$agent_name" yq -o json '.agents.[env(AGENT_NAME_YQ)].cannot_access' "$REGISTRY")
   if [[ "$cannot_access" != "null" && "$cannot_access" != "[]" ]]; then
-    export AGENT_CANNOT_ACCESS_LIST=$(yq ".agents.${agent_name}.cannot_access | map(\"- \" + .) | join(\"\n\")" "$REGISTRY")
+    export AGENT_CANNOT_ACCESS_LIST=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].cannot_access | map("- " + .) | join("\n")' "$REGISTRY")
   else
     export AGENT_CANNOT_ACCESS_LIST="(none)"
   fi
 
-  local exclusive_access=$(yq -o json ".agents.${agent_name}.exclusive_access" "$REGISTRY")
+  local exclusive_access=$(AGENT_NAME_YQ="$agent_name" yq -o json '.agents.[env(AGENT_NAME_YQ)].exclusive_access' "$REGISTRY")
   if [[ "$exclusive_access" != "null" && "$exclusive_access" != "[]" ]]; then
-    export AGENT_EXCLUSIVE_ACCESS_LIST=$(yq ".agents.${agent_name}.exclusive_access | map(\"- \" + .) | join(\"\n\")" "$REGISTRY")
+    export AGENT_EXCLUSIVE_ACCESS_LIST=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].exclusive_access | map("- " + .) | join("\n")' "$REGISTRY")
   else
     export AGENT_EXCLUSIVE_ACCESS_LIST="(none)"
   fi
 
-  local delegates_to=$(yq -o json ".agents.${agent_name}.delegates_to" "$REGISTRY")
+  local delegates_to=$(AGENT_NAME_YQ="$agent_name" yq -o json '.agents.[env(AGENT_NAME_YQ)].delegates_to' "$REGISTRY")
   if [[ "$delegates_to" != "null" && "$delegates_to" != "[]" ]]; then
-    export AGENT_DELEGATION_RULES="Can delegate to:\n$(yq ".agents.${agent_name}.delegates_to | map(\"- \" + .) | join(\"\n\")" "$REGISTRY")"
+    export AGENT_DELEGATION_RULES="Can delegate to:\n$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].delegates_to | map("- " + .) | join("\n")' "$REGISTRY")"
   else
     export AGENT_DELEGATION_RULES="No delegation (leaf agent)"
   fi
 
-  export AGENT_RESPONSIBILITIES_LIST=$(yq ".agents.${agent_name}.responsibilities | map(\"- \" + .) | join(\"\n\")" "$REGISTRY")
-  export AGENT_FORBIDDEN_LIST=$(yq ".agents.${agent_name}.forbidden | map(\"- \" + .) | join(\"\n\")" "$REGISTRY")
+  export AGENT_RESPONSIBILITIES_LIST=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].responsibilities | map("- " + .) | join("\n")' "$REGISTRY")
+  export AGENT_FORBIDDEN_LIST=$(AGENT_NAME_YQ="$agent_name" yq '.agents.[env(AGENT_NAME_YQ)].forbidden | map("- " + .) | join("\n")' "$REGISTRY")
 
   # Generate settings.json
   echo "  Generating settings.json..."
