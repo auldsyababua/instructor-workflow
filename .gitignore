@@ -47,3 +47,6 @@ TRACKING-AGENT-*
 skills/.backup-*/
 *.backup-*/
 .backup-*/
+
+# Session handoff documents (ephemeral, not version controlled)
+whats-next.md
