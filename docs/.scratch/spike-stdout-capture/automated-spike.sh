@@ -4,18 +4,31 @@
 
 set -euo pipefail
 
-SPIKE_DIR="/srv/projects/instructor-workflow/docs/.scratch/spike-stdout-capture"
+# Dynamic path resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SPIKE_DIR="$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LOG_FILE="${SPIKE_DIR}/auto-capture-$(date +%Y%m%d-%H%M%S).log"
 
 echo "🔬 Automated Spike: Claude Code stdout capture"
 echo "📝 Log file: $LOG_FILE"
 echo ""
 
-cd /srv/projects/instructor-workflow
+cd "$PROJECT_ROOT"
 
 # Send a simple prompt via echo, capture stdout/stderr
-# Using timeout to auto-exit after 30 seconds
-echo "Read whats-next.md and summarize the current sprint status in one sentence." | timeout 30s claude --add-dir /srv/projects/instructor-workflow 2>&1 | tee "$LOG_FILE" || true
+# Using timeout to auto-exit after 30 seconds (if available)
+if command -v timeout &>/dev/null; then
+  echo "Read whats-next.md and summarize the current sprint status in one sentence." | timeout 30s claude --add-dir "$PROJECT_ROOT" 2>&1 | tee "$LOG_FILE" || {
+    EXIT_CODE=$?
+    if [[ $EXIT_CODE -ne 124 ]]; then
+      echo "❌ Error: claude failed with exit code $EXIT_CODE" >&2
+    fi
+  }
+else
+  echo "⚠️  Warning: timeout command not found. Running without timeout protection."
+  echo "Read whats-next.md and summarize the current sprint status in one sentence." | claude --add-dir "$PROJECT_ROOT" 2>&1 | tee "$LOG_FILE"
+fi
 
 echo ""
 echo "✅ Spike complete (auto-terminated after 30s or completion)"

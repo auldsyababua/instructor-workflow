@@ -5,9 +5,23 @@
 
 set -euo pipefail
 
-SPIKE_DIR="/srv/projects/instructor-workflow/docs/.scratch/spike-stdout-capture"
+# Dynamic path resolution
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+SPIKE_DIR="$SCRIPT_DIR"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 LOG_FILE="${SPIKE_DIR}/claude-output-$(date +%Y%m%d-%H%M%S).log"
 PROMPT_FILE="${SPIKE_DIR}/test-prompt.txt"
+
+# Validate dependencies
+if [[ ! -f "$PROMPT_FILE" ]]; then
+  echo "❌ Error: Prompt file not found: $PROMPT_FILE" >&2
+  exit 1
+fi
+
+if ! command -v claude &>/dev/null; then
+  echo "❌ Error: 'claude' command not found. Is it installed and in PATH?" >&2
+  exit 1
+fi
 
 echo "🔬 Spike: Claude Code stdout capture"
 echo "📝 Log file: $LOG_FILE"
@@ -17,10 +31,10 @@ echo "Starting Claude Code with stdout/stderr capture..."
 echo "Press Ctrl+C after Claude responds to stop capture."
 echo ""
 
-cd /srv/projects/instructor-workflow
+cd "$PROJECT_ROOT"
 
 # Run Claude Code with input from prompt file, capture all output
-cat "$PROMPT_FILE" | claude --add-dir /srv/projects/instructor-workflow 2>&1 | tee "$LOG_FILE"
+cat "$PROMPT_FILE" | claude --add-dir "$PROJECT_ROOT" 2>&1 | tee "$LOG_FILE"
 
 echo ""
 echo "✅ Spike complete. Captured output to: $LOG_FILE"
