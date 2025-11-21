@@ -36,3 +36,17 @@ ENV/
 # Environment variables
 .env
 .env.local
+
+# Temporary agent artifacts
+.TRACKING-AGENT-*
+TRACKING-AGENT-*
+.verification_check.py
+.syntax_check.py
+
+# Backup directories (binary skill archives)
+skills/.backup-*/
+*.backup-*/
+.backup-*/
+
+# Session handoff documents (ephemeral, not version controlled)
+whats-next.md

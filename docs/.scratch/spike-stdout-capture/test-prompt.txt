@@ -1,0 +1,1 @@
+Read the file whats-next.md and tell me what the current sprint status is. Then use the Glob tool to find all test files in the tests/ directory.
