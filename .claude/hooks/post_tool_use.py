@@ -13,7 +13,19 @@ HOOKS_DIR = Path(__file__).parent
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
+# Add scripts/ to Python path for tool_logger import
+SCRIPTS_DIR = Path(__file__).parent.parent.parent / 'scripts'
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 from utils.constants import ensure_session_log_dir
+
+# Import tool logger for observability
+try:
+    from tool_logger import get_tool_logger
+except ImportError:
+    # Gracefully handle missing tool_logger (dev environments)
+    get_tool_logger = None
 
 def main():
     try:
@@ -43,7 +55,29 @@ def main():
         # Write back to file with formatting
         with open(log_path, 'w') as f:
             json.dump(log_data, f, indent=2)
-        
+
+        # Log tool completion for observability
+        if get_tool_logger is not None:
+            try:
+                tool_logger = get_tool_logger()
+
+                # Extract tool_response and error from input_data
+                tool_response = input_data.get('tool_response')
+                error = None
+
+                # Check if tool_response indicates an error
+                if isinstance(tool_response, dict) and not tool_response.get('success', True):
+                    error = tool_response.get('error', 'Tool execution failed')
+
+                tool_logger.log_tool_completion(
+                    tool_use_id=input_data.get('tool_use_id', 'unknown'),
+                    tool_response=tool_response,
+                    error=error
+                )
+            except Exception as e:
+                # Don't block on logging errors
+                print(f"Tool logging error: {e}", file=sys.stderr)
+
         sys.exit(0)
         
     except json.JSONDecodeError:

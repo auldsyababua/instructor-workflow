@@ -13,7 +13,19 @@ HOOKS_DIR = Path(__file__).parent
 if str(HOOKS_DIR) not in sys.path:
     sys.path.insert(0, str(HOOKS_DIR))
 
+# Add scripts/ to Python path for tool_logger import
+SCRIPTS_DIR = Path(__file__).parent.parent.parent / 'scripts'
+if str(SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(SCRIPTS_DIR))
+
 from utils.constants import ensure_session_log_dir
+
+# Import tool logger for observability
+try:
+    from tool_logger import get_tool_logger
+except ImportError:
+    # Gracefully handle missing tool_logger (dev environments)
+    get_tool_logger = None
 
 # Allowed directories where rm -rf is permitted
 ALLOWED_RM_DIRECTORIES = [
@@ -214,7 +226,21 @@ def main():
         # Write back to file with formatting
         with open(log_path, 'w') as f:
             json.dump(log_data, f, indent=2)
-        
+
+        # Log tool invocation for observability
+        if get_tool_logger is not None:
+            try:
+                tool_logger = get_tool_logger()
+                tool_logger.log_tool_invocation(
+                    session_id=session_id,
+                    tool_use_id=input_data.get('tool_use_id', 'unknown'),
+                    tool_name=tool_name,
+                    tool_input=tool_input
+                )
+            except Exception as e:
+                # Don't block on logging errors
+                print(f"Tool logging error: {e}", file=sys.stderr)
+
         sys.exit(0)
         
     except json.JSONDecodeError:

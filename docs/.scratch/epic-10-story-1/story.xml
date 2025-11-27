@@ -1,0 +1,607 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<research_output>
+  <initial_plan>
+    Use temp files to share timing state between pre_tool_use.py and post_tool_use.py hooks.
+    Each pre-hook writes start time to logs/{session_id}/tool_timing_{sequence}.json,
+    post-hook reads and deletes the file.
+  </initial_plan>
+
+  <validation_work>
+    <web_search_query>Claude Code hooks pre-tool-use post-tool-use timing correlation best practices</web_search_query>
+    <key_finding>
+      Claude Code passes tool_use_id field to BOTH PreToolUse and PostToolUse hooks.
+      This is the official correlation mechanism (confirmed via docs.claude.com).
+      No temp files needed - use tool_use_id matching.
+    </key_finding>
+    <web_search_query>JSON lines vs JSON array for logging performance 2025 best practices high frequency events</web_search_query>
+    <key_finding>
+      JSON Lines (JSONL) is 2025 industry standard for high-frequency logging.
+      Advantages: append-only (no file rewrites), memory efficient, streaming-friendly.
+      Pattern matches existing audit_logger.py implementation.
+    </key_finding>
+    <alternatives_rejected>
+      <alternative reason="Different domains - validation logs vs tool logs, mixed concerns">Extend audit_logger.py</alternative>
+      <alternative reason="External dependency, overkill for simple append-only logging">Use structlog library</alternative>
+      <alternative reason="Not needed - tool_use_id provides native correlation">Temp files for state sharing</alternative>
+    </alternatives_rejected>
+  </validation_work>
+
+  <final_plan>
+    <inventory>
+      <files>
+        <file path="scripts/tool_logger.py" lines="new">Tool execution logger - storage and state management</file>
+        <file path=".claude/hooks/pre_tool_use.py" lines="226-end">Add tool_logger.log_tool_invocation() call</file>
+        <file path=".claude/hooks/post_tool_use.py" lines="55-end">Add tool_logger.log_tool_completion() call</file>
+        <file path="scripts/audit_logger.py" lines="51-133">Reference for PII redaction and JSON lines pattern</file>
+      </files>
+      <dependencies>
+        <dependency critical="true">
+          <name>Python Standard Library</name>
+          <version>3.8+</version>
+          <note>json, time, hashlib, pathlib, datetime, os, socket</note>
+        </dependency>
+      </dependencies>
+      <infrastructure>
+        <env_var required="false">IW_TOOL_LOG_DIR</env_var>
+        <env_var required="false">IW_TOOL_RETENTION_DAYS</env_var>
+      </infrastructure>
+    </inventory>
+
+    <implementation>
+      <component name="scripts/tool_logger.py">
+        <code language="python" file="scripts/tool_logger.py"><![CDATA[
+#!/usr/bin/env python3
+"""
+Tool Execution Logger - Captures tool usage for observability
+
+Location: /srv/projects/instructor-workflow/scripts/tool_logger.py
+
+Provides tool execution audit trail with:
+- JSON lines format for streaming/parsing
+- In-memory state management for pre/post correlation
+- 90-day retention with automatic cleanup
+- PII redaction for security
+
+Configuration via environment variables:
+- IW_TOOL_RETENTION_DAYS: Log retention period (default: 90)
+- IW_TOOL_LOG_DIR: Log storage directory (default: logs/tool_execution)
+
+Usage:
+    from tool_logger import get_tool_logger
+
+    # In pre_tool_use.py hook
+    logger = get_tool_logger()
+    logger.log_tool_invocation(
+        session_id='abc123',
+        tool_use_id='tool_xyz',
+        tool_name='Read',
+        tool_input={'file_path': '/path/to/file.py'}
+    )
+
+    # In post_tool_use.py hook
+    logger.log_tool_completion(
+        tool_use_id='tool_xyz',
+        tool_response={'content': '...', 'success': True},
+        error=None
+    )
+"""
+
+import os
+import json
+import time
+import socket
+import hashlib
+from pathlib import Path
+from datetime import datetime, timedelta
+from typing import Optional, Dict, Any
+
+# Import PII redaction from audit_logger
+import sys
+sys.path.insert(0, str(Path(__file__).parent))
+from audit_logger import redact_pii
+
+
+class ToolLogger:
+    """
+    Tool execution logger with in-memory state for pre/post correlation.
+
+    Logs tool invocations and completions to JSON lines files with:
+    - Execution timing (calculated from pre/post timestamps)
+    - Tool parameters (PII-redacted)
+    - Tool results summary
+    - Error tracking
+
+    State management:
+    - In-memory dict: {tool_use_id: {start_time, session_id, tool_name, ...}}
+    - Thread-safe: Not needed (hooks run sequentially per session)
+    - Cleanup: Remove from dict after writing final log
+
+    Log format: JSON lines (one JSON object per line)
+    Log files: logs/tool_execution/tool_{YYYY-MM-DD}.json
+    Retention: 90 days (configurable)
+    """
+
+    def __init__(
+        self,
+        log_dir: Optional[Path] = None,
+        retention_days: Optional[int] = None
+    ):
+        """
+        Initialize tool logger.
+
+        Args:
+            log_dir: Log storage directory (default: logs/tool_execution)
+            retention_days: Log retention in days (default: 90)
+        """
+        # Load configuration
+        self.log_dir = log_dir or Path(os.getenv(
+            'IW_TOOL_LOG_DIR',
+            'logs/tool_execution'
+        ))
+        self.retention_days = retention_days or int(os.getenv(
+            'IW_TOOL_RETENTION_DAYS',
+            '90'
+        ))
+
+        # Create log directory
+        self.log_dir.mkdir(parents=True, exist_ok=True)
+
+        # System context (constant for process)
+        self.hostname = socket.gethostname()
+
+        # In-memory state for pre/post correlation
+        # Format: {tool_use_id: {'start_time': float, 'session_id': str, ...}}
+        self._pending_tools: Dict[str, Dict[str, Any]] = {}
+
+    def log_tool_invocation(
+        self,
+        session_id: str,
+        tool_use_id: str,
+        tool_name: str,
+        tool_input: Dict[str, Any]
+    ) -> None:
+        """
+        Log tool invocation (called from pre_tool_use.py hook).
+
+        Stores invocation data in memory for later correlation with completion.
+
+        Args:
+            session_id: Claude session ID
+            tool_use_id: Unique tool use ID (for pre/post correlation)
+            tool_name: Name of tool being invoked (Read, Write, Bash, etc.)
+            tool_input: Tool parameters (will be PII-redacted)
+
+        Example:
+            >>> logger = ToolLogger()
+            >>> logger.log_tool_invocation(
+            ...     session_id='abc123',
+            ...     tool_use_id='tool_xyz',
+            ...     tool_name='Read',
+            ...     tool_input={'file_path': '/path/to/file.py'}
+            ... )
+        """
+        # Store invocation data in memory
+        self._pending_tools[tool_use_id] = {
+            'start_time': time.time(),
+            'session_id': session_id,
+            'tool_name': tool_name,
+            'tool_input': tool_input
+        }
+
+    def log_tool_completion(
+        self,
+        tool_use_id: str,
+        tool_response: Optional[Dict[str, Any]] = None,
+        error: Optional[str] = None
+    ) -> None:
+        """
+        Log tool completion (called from post_tool_use.py hook).
+
+        Looks up invocation data by tool_use_id, calculates execution time,
+        writes complete log entry to JSON lines file, and cleans up state.
+
+        Args:
+            tool_use_id: Unique tool use ID (matches log_tool_invocation)
+            tool_response: Tool execution result
+            error: Error message if tool failed
+
+        Example:
+            >>> logger = ToolLogger()
+            >>> logger.log_tool_completion(
+            ...     tool_use_id='tool_xyz',
+            ...     tool_response={'success': True, 'content': '...'},
+            ...     error=None
+            ... )
+        """
+        # Look up invocation data
+        invocation = self._pending_tools.get(tool_use_id)
+
+        if not invocation:
+            # Invocation not found - possible if pre-hook failed or malformed
+            # Log anyway with partial data
+            self._write_log_entry({
+                'timestamp': time.time(),
+                'iso_time': datetime.utcnow().isoformat() + 'Z',
+                'tool_use_id': tool_use_id,
+                'session_id': 'unknown',
+                'tool_name': 'unknown',
+                'tool_params': {},
+                'execution_time_ms': None,
+                'result_status': 'error' if error else 'success',
+                'output_summary': self._summarize_output(tool_response),
+                'error': error,
+                'hostname': self.hostname,
+                'note': 'Invocation data not found (pre-hook may have failed)'
+            })
+            return
+
+        # Calculate execution time
+        end_time = time.time()
+        start_time = invocation['start_time']
+        execution_time_ms = int((end_time - start_time) * 1000)
+
+        # Redact PII from tool parameters
+        tool_params_str = json.dumps(invocation['tool_input'])
+        tool_params_redacted = redact_pii(tool_params_str)
+        tool_params = json.loads(tool_params_redacted)
+
+        # Determine result status
+        if error:
+            result_status = 'error'
+        elif tool_response and not tool_response.get('success', True):
+            result_status = 'failure'
+        else:
+            result_status = 'success'
+
+        # Build log entry
+        log_entry = {
+            'timestamp': end_time,
+            'iso_time': datetime.utcnow().isoformat() + 'Z',
+            'tool_use_id': tool_use_id,
+            'session_id': invocation['session_id'],
+            'tool_name': invocation['tool_name'],
+            'tool_params': tool_params,
+            'execution_time_ms': execution_time_ms,
+            'result_status': result_status,
+            'output_summary': self._summarize_output(tool_response),
+            'error': error,
+            'hostname': self.hostname
+        }
+
+        # Write log entry
+        self._write_log_entry(log_entry)
+
+        # Cleanup: Remove from pending dict
+        del self._pending_tools[tool_use_id]
+
+        # Periodic cleanup of old logs (~1% of the time)
+        if time.time() % 100 < 1:
+            self._cleanup_old_logs()
+
+    def _summarize_output(self, tool_response: Optional[Dict[str, Any]]) -> Dict[str, Any]:
+        """
+        Create summary of tool output (avoid logging massive responses).
+
+        Args:
+            tool_response: Full tool response from Claude Code
+
+        Returns:
+            Summarized output with key metrics
+        """
+        if not tool_response:
+            return {'size_bytes': 0, 'type': 'none'}
+
+        # Calculate output size
+        output_str = json.dumps(tool_response)
+        size_bytes = len(output_str.encode('utf-8'))
+
+        # Extract key fields (avoid logging full content)
+        summary = {
+            'size_bytes': size_bytes,
+            'type': type(tool_response).__name__
+        }
+
+        # Add success indicator if present
+        if 'success' in tool_response:
+            summary['success'] = tool_response['success']
+
+        # Add error indicator if present
+        if 'error' in tool_response:
+            summary['has_error'] = True
+
+        return summary
+
+    def _write_log_entry(self, log_entry: Dict[str, Any]) -> None:
+        """
+        Write log entry to JSON lines file.
+
+        Args:
+            log_entry: Complete log entry to write
+        """
+        log_file = self._get_log_file()
+
+        # Append to JSON lines file (one JSON object per line)
+        with open(log_file, 'a') as f:
+            f.write(json.dumps(log_entry) + '\n')
+
+    def _get_log_file(self) -> Path:
+        """
+        Get log file path for current date.
+
+        Returns:
+            Path to log file (logs/tool_execution/tool_{YYYY-MM-DD}.json)
+        """
+        date_str = datetime.utcnow().strftime('%Y-%m-%d')
+        return self.log_dir / f"tool_{date_str}.json"
+
+    def _cleanup_old_logs(self) -> None:
+        """
+        Delete tool logs older than retention period.
+
+        Removes logs older than IW_TOOL_RETENTION_DAYS (default 90 days).
+        Only called occasionally to minimize performance impact.
+        """
+        cutoff = datetime.utcnow() - timedelta(days=self.retention_days)
+
+        for log_file in self.log_dir.glob("tool_*.json"):
+            # Extract date from filename (tool_YYYY-MM-DD.json)
+            import re
+            match = re.search(r'tool_(\d{4}-\d{2}-\d{2})\.json', log_file.name)
+            if match:
+                file_date_str = match.group(1)
+                try:
+                    file_date = datetime.strptime(file_date_str, '%Y-%m-%d')
+                    if file_date < cutoff:
+                        log_file.unlink()  # Delete old log
+                except ValueError:
+                    # Invalid date format, skip
+                    pass
+
+    def get_tool_stats(self, hours: int = 24) -> Dict[str, Any]:
+        """
+        Get tool usage statistics for time period.
+
+        Args:
+            hours: Look back period in hours (default: 24)
+
+        Returns:
+            Dictionary with tool usage statistics
+
+        Example:
+            >>> logger = ToolLogger()
+            >>> stats = logger.get_tool_stats(hours=1)
+            >>> print(f"Total tools: {stats['total_tools']}")
+            >>> print(f"Avg time: {stats['avg_execution_ms']:.1f}ms")
+        """
+        cutoff = time.time() - (hours * 3600)
+        total = 0
+        execution_times = []
+        by_tool = {}
+        by_status = {'success': 0, 'failure': 0, 'error': 0}
+
+        # Read logs from last N days
+        days_to_check = (hours // 24) + 2
+        for i in range(days_to_check):
+            date = datetime.utcnow() - timedelta(days=i)
+            log_file = self.log_dir / f"tool_{date.strftime('%Y-%m-%d')}.json"
+
+            if not log_file.exists():
+                continue
+
+            with open(log_file, 'r') as f:
+                for line in f:
+                    try:
+                        entry = json.loads(line)
+                        # Filter: within time window
+                        if entry.get('timestamp', 0) < cutoff:
+                            continue
+
+                        total += 1
+                        tool_name = entry.get('tool_name', 'unknown')
+                        result_status = entry.get('result_status', 'unknown')
+                        exec_time = entry.get('execution_time_ms')
+
+                        # Track execution times
+                        if exec_time is not None:
+                            execution_times.append(exec_time)
+
+                        # Count by tool
+                        by_tool[tool_name] = by_tool.get(tool_name, 0) + 1
+
+                        # Count by status
+                        if result_status in by_status:
+                            by_status[result_status] += 1
+
+                    except json.JSONDecodeError:
+                        pass
+
+        # Calculate averages
+        avg_execution_ms = sum(execution_times) / len(execution_times) if execution_times else 0.0
+        success_rate = (by_status['success'] / total * 100) if total > 0 else 0.0
+
+        return {
+            'total_tools': total,
+            'avg_execution_ms': avg_execution_ms,
+            'success_rate': success_rate,
+            'by_tool': by_tool,
+            'by_status': by_status,
+            'time_period_hours': hours
+        }
+
+
+# Singleton instance for hooks to use
+_tool_logger_instance: Optional[ToolLogger] = None
+
+def get_tool_logger() -> ToolLogger:
+    """
+    Get singleton ToolLogger instance.
+
+    Hooks should use this to get a shared logger instance across
+    pre_tool_use.py and post_tool_use.py for proper state management.
+
+    Returns:
+        Shared ToolLogger instance
+    """
+    global _tool_logger_instance
+    if _tool_logger_instance is None:
+        _tool_logger_instance = ToolLogger()
+    return _tool_logger_instance
+
+
+# Example usage and testing
+if __name__ == "__main__":
+    print("=== Tool Logger Examples ===\n")
+
+    # Example 1: Log tool invocation and completion
+    print("Example 1: Log Read Tool Execution")
+    print("-" * 50)
+    logger = get_tool_logger()
+
+    # Simulate pre-tool hook
+    logger.log_tool_invocation(
+        session_id='test_session_123',
+        tool_use_id='tool_read_001',
+        tool_name='Read',
+        tool_input={'file_path': '/srv/projects/instructor-workflow/README.md'}
+    )
+    print("✅ Logged tool invocation")
+
+    # Simulate some work
+    time.sleep(0.05)  # 50ms
+
+    # Simulate post-tool hook
+    logger.log_tool_completion(
+        tool_use_id='tool_read_001',
+        tool_response={'success': True, 'content': '...file content...'},
+        error=None
+    )
+    print("✅ Logged tool completion")
+    print()
+
+    # Example 2: Log failed tool execution
+    print("Example 2: Log Failed Bash Command")
+    print("-" * 50)
+    logger.log_tool_invocation(
+        session_id='test_session_123',
+        tool_use_id='tool_bash_001',
+        tool_name='Bash',
+        tool_input={'command': 'rm -rf /important/data'}
+    )
+
+    logger.log_tool_completion(
+        tool_use_id='tool_bash_001',
+        tool_response=None,
+        error='BLOCKED: Dangerous rm command detected'
+    )
+    print("✅ Logged failed execution")
+    print()
+
+    # Example 3: Get tool statistics
+    print("Example 3: Tool Usage Statistics")
+    print("-" * 50)
+    stats = logger.get_tool_stats(hours=24)
+    print(f"Total tools: {stats['total_tools']}")
+    print(f"Avg execution: {stats['avg_execution_ms']:.1f}ms")
+    print(f"Success rate: {stats['success_rate']:.1f}%")
+    print(f"By tool: {stats['by_tool']}")
+    print(f"By status: {stats['by_status']}")
+]]></code>
+        <gotcha>Tool_use_id may not be unique across sessions - always log session_id too</gotcha>
+        <gotcha>Large tool responses should be summarized (don't log full file contents)</gotcha>
+        <gotcha>Pre-hook may fail before post-hook runs - handle missing invocation data gracefully</gotcha>
+        <best_practice>JSON Lines format (2025 standard) - append-only, streaming-friendly, no file rewrites</best_practice>
+        <best_practice>In-memory state management - simple, fast, no race conditions (hooks run sequentially)</best_practice>
+        <best_practice>PII redaction - reuse audit_logger.py patterns for consistency</best_practice>
+      </component>
+
+      <component name=".claude/hooks/pre_tool_use.py">
+        <code language="python" file=".claude/hooks/pre_tool_use.py"><![CDATA[
+# Add to imports at top of file (after existing imports):
+import sys
+from pathlib import Path
+
+# Add tool_logger import (after utils imports):
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'scripts'))
+from tool_logger import get_tool_logger
+
+# Add to main() function, AFTER logging to pre_tool_use.json, BEFORE sys.exit(0):
+        # Log tool invocation for observability
+        try:
+            tool_logger = get_tool_logger()
+            tool_logger.log_tool_invocation(
+                session_id=session_id,
+                tool_use_id=input_data.get('tool_use_id', 'unknown'),
+                tool_name=tool_name,
+                tool_input=tool_input
+            )
+        except Exception as e:
+            # Don't block on logging errors
+            print(f"Tool logging error: {e}", file=sys.stderr)
+
+        sys.exit(0)
+]]></code>
+        <gotcha>Must import tool_logger AFTER setting sys.path to include scripts/</gotcha>
+        <gotcha>Wrap in try/except - logging failures should not block tool execution</gotcha>
+        <best_practice>Log AFTER existing session logging (preserve current behavior)</best_practice>
+      </component>
+
+      <component name=".claude/hooks/post_tool_use.py">
+        <code language="python" file=".claude/hooks/post_tool_use.py"><![CDATA[
+# Add to imports at top of file (after existing imports):
+import sys
+from pathlib import Path
+
+# Add tool_logger import (after utils imports):
+sys.path.insert(0, str(Path(__file__).parent.parent.parent / 'scripts'))
+from tool_logger import get_tool_logger
+
+# Modify main() function, AFTER logging to post_tool_use.json, BEFORE sys.exit(0):
+        # Log tool completion for observability
+        try:
+            tool_logger = get_tool_logger()
+
+            # Extract tool_response and error from input_data
+            tool_response = input_data.get('tool_response')
+            error = None
+
+            # Check if tool_response indicates an error
+            if isinstance(tool_response, dict) and not tool_response.get('success', True):
+                error = tool_response.get('error', 'Tool execution failed')
+
+            tool_logger.log_tool_completion(
+                tool_use_id=input_data.get('tool_use_id', 'unknown'),
+                tool_response=tool_response,
+                error=error
+            )
+        except Exception as e:
+            # Don't block on logging errors
+            print(f"Tool logging error: {e}", file=sys.stderr)
+
+        sys.exit(0)
+]]></code>
+        <gotcha>tool_response format varies by tool - use generic dict access</gotcha>
+        <gotcha>Error detection heuristic - may need adjustment based on actual tool_response formats</gotcha>
+        <best_practice>Wrap in try/except - logging failures should not block hook execution</best_practice>
+      </component>
+    </implementation>
+
+    <acceptance_criteria>
+      <criterion>Hooks execute in &lt;10ms overhead (measure with time.time() before/after logger calls)</criterion>
+      <criterion>Tool name, parameters, execution time captured for every tool call</criterion>
+      <criterion>JSON lines format: logs/tool_execution/tool_{YYYY-MM-DD}.json</criterion>
+      <criterion>90-day retention with automatic cleanup</criterion>
+      <criterion>PII redaction applied to tool parameters</criterion>
+      <criterion>tool_use_id correlation between pre/post hooks works correctly</criterion>
+      <criterion>Missing invocation data handled gracefully (no crashes)</criterion>
+      <criterion>Stats API returns correct tool usage metrics</criterion>
+    </acceptance_criteria>
+  </final_plan>
+
+  <research_trail>
+    <source type="docs" url="https://code.claude.com/docs/en/hooks">Claude Code Hooks Reference - Confirmed tool_use_id field in both PreToolUse and PostToolUse hooks</source>
+    <source type="article" url="https://jsonltools.com/jsonl-vs-json">JSONL vs JSON comparison - Confirmed JSON Lines is 2025 standard for high-frequency logging</source>
+    <source type="article" url="https://www.dash0.com/guides/json-logging">JSON Logging best practices - Confirmed append-only and streaming benefits</source>
+    <source type="code" url="file:///srv/projects/instructor-workflow/scripts/audit_logger.py">Existing audit_logger.py - Pattern reference for JSON lines, PII redaction, 90-day retention</source>
+    <source type="code" url="file:///srv/projects/instructor-workflow/.claude/hooks/pre_tool_use.py">Existing pre_tool_use.py hook - Pattern reference for hook structure and stdin JSON parsing</source>
+  </research_trail>
+</research_output>

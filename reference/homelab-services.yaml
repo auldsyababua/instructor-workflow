@@ -1,0 +1,392 @@
+# Homelab Services Configuration
+# Updated: 2025-11-21
+# Network: VLAN 10 (192.168.10.0/24)
+# Access: Via Tailscale subnet routing when remote
+
+# Core AI Services
+ai_services:
+  open_webui:
+    endpoint: "http://192.168.10.10:8080"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8080"
+    purpose: "Primary AI chat interface"
+    features:
+      - "Multi-model chat interface"
+      - "Conversation history"
+      - "Model switching"
+
+  vllm:
+    endpoint: "http://192.168.10.10:8000"
+    traefik_route: "http://workhorse.local/llm"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8000"
+    purpose: "Local LLM inference server (OpenAI-compatible API)"
+    model: "meta-llama/Llama-3.1-8B-Instruct"
+    gpu: "RTX 5090 (32GB GDDR7)"
+    features:
+      - "OpenAI-compatible API"
+      - "Streaming responses"
+      - "Chat completions"
+      - "/v1/models endpoint"
+      - "/v1/chat/completions endpoint"
+    auth:
+      type: "BasicAuth"
+      username: "admin"
+      password: "tonto989"
+
+  flowise:
+    endpoint: "http://192.168.10.10:3001"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:3001"
+    purpose: "AI workflow builder and automation"
+    features:
+      - "Visual workflow designer"
+      - "LLM chain orchestration"
+      - "Integration with multiple AI services"
+
+# Data Services
+data_services:
+  qdrant:
+    endpoint: "http://192.168.10.10:6333"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:6333"
+    purpose: "Vector database for embeddings"
+    features:
+      - "1536-dim embeddings support"
+      - "Cosine distance similarity"
+      - "REST API"
+      - "gRPC API (6334)"
+    collections:
+      - "anthropic_docs (477 pages, 1381 chunks)"
+
+  dragonfly:
+    endpoint: "redis://192.168.10.10:6379"
+    tailscale: "redis://workhorse-linux.tail9665fc.ts.net:6379"
+    purpose: "Redis-compatible cache"
+    memory_limit: "8GB"
+    max_memory: "6GB"
+    features:
+      - "Redis protocol compatible"
+      - "Automatic snapshots (6h intervals)"
+      - "Key-value store"
+
+# Monitoring & Observability
+monitoring_services:
+  grafana:
+    endpoint: "http://192.168.10.10:3000"
+    traefik_route: "http://workhorse.local/grafana"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:3000"
+    purpose: "Metrics visualization and dashboards"
+    auth:
+      type: "BasicAuth (Traefik) + Grafana Login"
+      traefik_username: "admin"
+      traefik_password: "tonto989"
+      grafana_username: "admin"
+      grafana_password: "see .env or 1Password"
+    dashboards:
+      - "System Overview"
+      - "GPU Metrics (RTX 5090)"
+      - "Container Metrics"
+      - "vLLM Performance"
+
+  prometheus:
+    endpoint: "http://192.168.10.10:9090"
+    traefik_route: "http://workhorse.local/prom"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:9090"
+    purpose: "Metrics database and monitoring"
+    auth:
+      type: "BasicAuth"
+      username: "admin"
+      password: "tonto989"
+    features:
+      - "15s scrape interval"
+      - "30d retention"
+      - "PromQL query engine"
+    scrape_targets:
+      - "node_exporter (host.docker.internal:9100)"
+      - "cadvisor (cadvisor:8080)"
+      - "dcgm-exporter (dcgm-exporter:9400)"
+      - "prometheus (localhost:9090)"
+
+  cadvisor:
+    endpoint: "http://192.168.10.10:8082"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8082"
+    purpose: "Container metrics collection"
+    features:
+      - "Per-container CPU/memory/network stats"
+      - "10s housekeeping interval"
+      - "Prometheus metrics export"
+
+  dcgm_exporter:
+    endpoint: "http://192.168.10.10:9400"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:9400"
+    purpose: "NVIDIA GPU metrics (RTX 5090)"
+    features:
+      - "GPU utilization"
+      - "VRAM usage"
+      - "Temperature monitoring"
+      - "Power consumption"
+
+  node_exporter:
+    endpoint: "http://192.168.10.10:9100"
+    purpose: "System-level metrics"
+    type: "systemd service"
+    features:
+      - "CPU metrics"
+      - "Memory metrics"
+      - "Disk I/O"
+      - "Network statistics"
+
+# Development Services
+dev_services:
+  jupyter:
+    endpoint: "http://192.168.10.10:8888"
+    traefik_route: "http://workhorse.local/lab"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8888"
+    purpose: "Jupyter Lab notebooks"
+    workspace: "/srv/projects"
+    auth:
+      type: "BasicAuth"
+      username: "admin"
+      password: "tonto989"
+
+  n8n:
+    endpoint: "http://192.168.10.10:5678"
+    traefik_route: "http://workhorse.local/n8n"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:5678"
+    purpose: "Workflow automation platform"
+    auth:
+      type: "BasicAuth"
+      username: "admin"
+      password: "tonto989"
+    features:
+      - "Visual workflow editor"
+      - "400+ integrations"
+      - "Webhook support"
+      - "Scheduled workflows"
+
+  mcp_bridge:
+    endpoint: "http://192.168.10.10:8090"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8090"
+    purpose: "Model Context Protocol bridge"
+    features:
+      - "MCP server integration"
+      - "Tool orchestration"
+
+  mem0:
+    endpoint: "http://192.168.10.10:8765"
+    traefik_route: "http://workhorse.local/mem0"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:8765"
+    purpose: "Agent memory system (MCP server)"
+    features:
+      - "Persistent agent memory"
+      - "Redis + Qdrant backend"
+      - "MCP protocol support"
+
+# Infrastructure Services
+infrastructure:
+  traefik:
+    endpoint: "http://192.168.10.10:80"
+    tailscale: "http://workhorse-linux.tail9665fc.ts.net:80"
+    purpose: "Reverse proxy and ingress"
+    auth:
+      type: "BasicAuth (global)"
+      username: "admin"
+      password: "tonto989"
+    routes:
+      - "/llm → vLLM (StripPrefix)"
+      - "/grafana → Grafana"
+      - "/prom → Prometheus"
+      - "/n8n → n8n"
+      - "/lab → Jupyter"
+      - "/mem0 → mem0"
+
+  avahi:
+    purpose: "mDNS service discovery"
+    hostname: "workhorse.local"
+    services:
+      - "_http._tcp (Grafana, Prometheus, n8n, vLLM)"
+      - "_smb._tcp (optional)"
+      - "_ssh._tcp (optional)"
+
+  samba:
+    endpoint: "smb://192.168.10.10"
+    ports: [139, 445]
+    purpose: "File sharing (Projects, Data, Models)"
+    auth:
+      username: "lanuser"
+      password: "see .env"
+    shares:
+      projects:
+        path: "/srv/projects"
+        permissions: "read/write"
+        url: "smb://workhorse.local/Projects"
+      data:
+        path: "/srv/data"
+        permissions: "read-only"
+        url: "smb://workhorse.local/Data"
+      models:
+        path: "/srv/models"
+        permissions: "read-only"
+        url: "smb://workhorse.local/Models"
+
+# Unraid NAS Services
+unraid_services:
+  dashboard:
+    endpoint: "http://192.168.10.219"
+    tailscale: "http://nastygirltustin.tail9665fc.ts.net"
+    purpose: "Unraid NAS management interface"
+
+  nginx_proxy_manager:
+    endpoint: "http://192.168.10.219:8181"
+    tailscale: "http://nastygirltustin.tail9665fc.ts.net:8181"
+    purpose: "Reverse proxy configuration UI"
+    features:
+      - "SSL certificate management"
+      - "Proxy host configuration"
+      - "Access list management"
+
+  vaultwarden:
+    endpoint: "http://192.168.10.219:8812"
+    tailscale: "http://nastygirltustin.tail9665fc.ts.net:8812"
+    purpose: "Self-hosted password manager (Bitwarden)"
+    features:
+      - "Bitwarden-compatible"
+      - "Browser extensions"
+      - "Mobile apps"
+
+# Network Configuration
+network:
+  vlan:
+    id: 10
+    subnet: "192.168.10.0/24"
+    gateway: "192.168.10.1"
+
+  devices:
+    workhorse:
+      lan_ip: "192.168.10.10"
+      p2p_ip: "10.0.0.2"
+      tailscale_ip: "100.115.174.127"
+      tailscale_hostname: "workhorse-linux.tail9665fc.ts.net"
+
+    mac_mini:
+      lan_ip: "192.168.10.102"
+      p2p_ip: "10.0.0.1"
+      tailscale_ip: "100.91.33.10"
+      tailscale_hostname: "m4-mini.tail9665fc.ts.net"
+
+    unraid_nas:
+      lan_ip: "192.168.10.219"
+      tailscale_ip: "100.75.247.36"
+      tailscale_hostname: "nastygirltustin.tail9665fc.ts.net"
+
+    slate7_router:
+      lan_ip: "192.168.8.0/24"
+      tailscale_ip: "100.74.108.32"
+      tailscale_hostname: "gl-be3600.tail9665fc.ts.net"
+
+  tailscale:
+    subnet_routers:
+      - device: "workhorse-linux"
+        routes: ["192.168.10.0/24"]
+        status: "active"
+      - device: "m4-mini"
+        routes: ["192.168.10.0/24"]
+        status: "active (redundant)"
+      - device: "gl-be3600"
+        routes: ["192.168.8.0/24"]
+        status: "active"
+
+  ssh_access:
+    workhorse:
+      - "ssh workhorse@192.168.10.10"
+      - "ssh workhorse@10.0.0.2  # P2P 10GbE"
+      - "ssh workhorse@100.115.174.127  # Tailscale"
+    mac_mini:
+      - "ssh colinaulds@192.168.10.102"
+      - "ssh colinaulds@10.0.0.1  # P2P 10GbE"
+      - "ssh colinaulds@100.91.33.10  # Tailscale"
+    unraid:
+      - "ssh root@192.168.10.219"
+      - "ssh root@100.75.247.36  # Tailscale"
+
+# Remote Access (Traveling)
+remote_access:
+  requirements:
+    - "Tailscale installed with --accept-routes flag"
+    - "Connected to Tailscale network"
+
+  access_methods:
+    direct_ip:
+      description: "Use 192.168.10.x addresses directly"
+      example: "http://192.168.10.10:8080"
+      note: "Works through subnet routing"
+
+    tailscale_hostname:
+      description: "Use Tailscale MagicDNS hostnames"
+      example: "http://workhorse-linux.tail9665fc.ts.net:8080"
+      note: "Works from any Tailscale device"
+
+    mdns_disabled:
+      description: "workhorse.local only works on LAN"
+      note: "Use IP addresses or Tailscale hostnames when remote"
+
+# Authentication Credentials
+authentication:
+  traefik_basicauth:
+    username: "admin"
+    password: "tonto989"
+    applies_to:
+      - "Grafana (Traefik layer)"
+      - "Prometheus"
+      - "vLLM"
+      - "n8n"
+      - "Jupyter"
+      - "mem0"
+
+  grafana_login:
+    username: "admin"
+    password: "see .env or 1Password: Homelab/Grafana Admin"
+
+  samba:
+    username: "lanuser"
+    password: "see .env"
+
+# Hardware Specs
+hardware:
+  workhorse:
+    cpu: "AMD Ryzen 9 9950X (16c/32t, 4.3-5.7 GHz)"
+    gpu: "MSI RTX 5090 Gaming X Trio OC (32GB GDDR7)"
+    ram: "128GB DDR5-6000"
+    storage: "2TB Samsung 990 PRO NVMe (ext4)"
+    network:
+      - "10GbE (P2P to Mac Mini)"
+      - "2.5GbE (LAN)"
+      - "WiFi 7"
+
+  mac_mini:
+    model: "Mac Mini M4 Pro"
+    network: "10GbE via Thunderbolt"
+
+  unraid_nas:
+    cpu: "Intel Celeron J6413"
+    ram: "31GB"
+    storage:
+      array: "15TB XFS"
+      cache: "3.7TB NVMe Btrfs"
+    network: "2.5GbE"
+
+# Quick Reference
+quick_start:
+  local_development:
+    - "SSH: ssh workhorse@192.168.10.10"
+    - "AI Chat: http://192.168.10.10:8080"
+    - "Dashboards: http://192.168.10.10:3000"
+    - "LLM API: http://192.168.10.10:8000/v1/chat/completions"
+
+  remote_access:
+    - "Install Tailscale: curl -fsSL https://tailscale.com/install.sh | sh"
+    - "Connect: sudo tailscale up --accept-routes"
+    - "Access services via 192.168.10.x addresses"
+
+  common_endpoints:
+    llm_api: "http://192.168.10.10:8000/v1"
+    vector_db: "http://192.168.10.10:6333"
+    monitoring: "http://192.168.10.10:3000"
+    file_shares: "smb://192.168.10.10"
