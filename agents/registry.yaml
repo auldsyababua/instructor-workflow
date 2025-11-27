@@ -1,788 +1,774 @@
-# Agent Registry - Single Source of Truth
-# Maintained by: Research Agent (when creating new agents)
-# Consumed by: session-manager.sh, build-prompts.sh, Planning Agent context generation
-# Validation: scripts/validate-registry.sh (pre-commit hook)
-#
-# AGENT COUNT CLARIFICATION:
-# - 26 Canonical Agents: Specialized domain agents with tool restrictions
-# - 1 Orchestrator Agent: traycer-agent (coordinator, not specialized)
-# - Total: 27 agents in registry
-# - Archived: 32 V1 legacy agents (see agents/archive/v1-legacy-20251120/README.md)
-#
-# Schema Reference:
-#   Required: name, display_name, description, model, tools
-#   Optional: delegates_to, cannot_access, exclusive_access, responsibilities, forbidden
-#
-# See: docs/.scratch/research-system-audit/modular-prompting-architecture.md
-
 agents:
   grafana-agent:
     name: grafana-agent
-    display_name: "Grafana Agent"
-    description: "Deploy, configure, and manage Grafana monitoring dashboards with Prometheus integration, GPU monitoring, alerting, and infrastructure-as-code provisioning"
-    model: sonnet
+    display_name: Grafana Agent
+    description: Deploy, configure, and manage Grafana monitoring dashboards with
+      Prometheus integration, GPU monitoring, alerting, and infrastructure-as-code
+      provisioning
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - WebFetch
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - WebFetch
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Deploy and configure Grafana dashboards
-      - Prometheus integration setup
-      - GPU monitoring configuration
-      - Alerting and infrastructure-as-code provisioning
+    - Deploy and configure Grafana dashboards
+    - Prometheus integration setup
+    - GPU monitoring configuration
+    - Alerting and infrastructure-as-code provisioning
     forbidden:
-      - Modify test files
-      - Update Linear (Tracking Agent)
-      - Git operations (Tracking Agent)
-
+    - Modify test files
+    - Update Linear (Tracking Agent)
+    - Git operations (Tracking Agent)
   backend-agent:
     name: backend-agent
-    display_name: "Backend Agent"
-    description: "Handles server-side implementation and API development"
-    model: sonnet
+    display_name: Backend Agent
+    description: Handles server-side implementation and API development
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
-      - '*.test.*'
-      - '*.spec.*'
-      - frontend/**
+    - tests/**
+    - test/**
+    - '*.test.*'
+    - '*.spec.*'
+    - frontend/**
     exclusive_access: []
     responsibilities:
-      - API development (REST, GraphQL, gRPC)
-      - Database schema and queries
-      - Authentication and authorization
-      - Business logic implementation
-      - External API integrations
-      - Background jobs and queues
-      - Performance and scalability
+    - API development (REST, GraphQL, gRPC)
+    - Database schema and queries
+    - Authentication and authorization
+    - Business logic implementation
+    - External API integrations
+    - Background jobs and queues
+    - Performance and scalability
     forbidden:
-      - Modify test files (Test Writer/Auditor owns tests)
-      - Update Linear issues (Tracking Agent)
-      - Commit to git (Tracking Agent)
-      - Deploy to production (DevOps Agent)
-      - UI implementation (Frontend Agent)
-      - Infrastructure/deployment config (DevOps Agent)
-
+    - Modify test files (Test Writer/Auditor owns tests)
+    - Update Linear issues (Tracking Agent)
+    - Commit to git (Tracking Agent)
+    - Deploy to production (DevOps Agent)
+    - UI implementation (Frontend Agent)
+    - Infrastructure/deployment config (DevOps Agent)
   browser-agent:
     name: browser-agent
-    display_name: "Browser Agent"
-    description: "Performs browser-based testing and interactions"
-    model: sonnet
+    display_name: Browser Agent
+    description: Performs browser-based testing and interactions
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - mcp__chrome-devtools
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - mcp__chrome-devtools
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Perform browser-based testing and interactions
-      - GUI operations
-      - Browser automation
-      - End-to-end testing
+    - Perform browser-based testing and interactions
+    - GUI operations
+    - Browser automation
+    - End-to-end testing
     forbidden:
-      - Modify test files (Test Writer/Auditor owns creation)
-      - Update Linear issues (Tracking Agent)
-      - Write production code (implementation agents)
-
+    - Modify test files (Test Writer/Auditor owns creation)
+    - Update Linear issues (Tracking Agent)
+    - Write production code (implementation agents)
   cadvisor-agent:
     name: cadvisor-agent
-    display_name: "Cadvisor Agent"
-    description: "cAdvisor container monitoring, resource metrics, Prometheus integration"
-    model: claude-sonnet-4-5-20250929
+    display_name: Cadvisor Agent
+    description: cAdvisor container monitoring, resource metrics, Prometheus integration
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - cAdvisor container monitoring setup
-      - Resource metrics collection
-      - Prometheus integration
-      - Container performance analysis
+    - cAdvisor container monitoring setup
+    - Resource metrics collection
+    - Prometheus integration
+    - Container performance analysis
     forbidden:
-      - Modify test files
-      - Application development
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application development
+    - Update Linear (Tracking Agent)
   debug-agent:
     name: debug-agent
-    display_name: "Debug Agent"
-    description: "Investigates and resolves bugs and issues"
-    model: sonnet
+    display_name: Debug Agent
+    description: Investigates and resolves bugs and issues
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Investigate and resolve bugs and issues
-      - Root cause analysis
-      - Diagnostic script creation
-      - Production bug fixes
+    - Investigate and resolve bugs and issues
+    - Root cause analysis
+    - Diagnostic script creation
+    - Production bug fixes
     forbidden:
-      - Modify test files (Test Writer/Auditor)
-      - Update Linear issues (Tracking Agent)
-      - Commit to git (Tracking Agent)
-
+    - Modify test files (Test Writer/Auditor)
+    - Update Linear issues (Tracking Agent)
+    - Commit to git (Tracking Agent)
   devops-agent:
     name: devops-agent
-    display_name: "Devops Agent"
-    description: "Manages infrastructure and deployment operations"
-    model: sonnet
+    display_name: Devops Agent
+    description: Manages infrastructure and deployment operations
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Manage infrastructure and deployment operations
-      - Configure CI/CD pipelines
-      - Container orchestration
-      - Infrastructure as code
+    - Manage infrastructure and deployment operations
+    - Configure CI/CD pipelines
+    - Container orchestration
+    - Infrastructure as code
     forbidden:
-      - Modify test files (Test Writer/Auditor)
-      - Update Linear issues (Tracking Agent)
-      - Write business logic code (Backend/Frontend agents)
-
+    - Modify test files (Test Writer/Auditor)
+    - Update Linear issues (Tracking Agent)
+    - Write business logic code (Backend/Frontend agents)
   docker-agent:
     name: docker-agent
-    display_name: "Docker Agent"
-    description: "Docker/Docker Compose operations, container management, resource monitoring, debugging, and infrastructure deployment"
-    model: sonnet
+    display_name: Docker Agent
+    description: Docker/Docker Compose operations, container management, resource
+      monitoring, debugging, and infrastructure deployment
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - WebFetch
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - WebFetch
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Docker/Docker Compose operations
-      - Container management and debugging
-      - Resource monitoring
-      - Infrastructure deployment
+    - Docker/Docker Compose operations
+    - Container management and debugging
+    - Resource monitoring
+    - Infrastructure deployment
     forbidden:
-      - Modify test files
-      - Update Linear (Tracking Agent)
-      - Application code development (Backend/Frontend agents)
-
+    - Modify test files
+    - Update Linear (Tracking Agent)
+    - Application code development (Backend/Frontend agents)
   frappe-erpnext-agent:
     name: frappe-erpnext-agent
-    display_name: "Frappe Erpnext Agent"
-    description: "Specialized agent for Frappe Cloud and ERPNext administration using Bench CLI"
-    model: sonnet
+    display_name: Frappe Erpnext Agent
+    description: Specialized agent for Frappe Cloud and ERPNext administration using
+      Bench CLI
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - Task
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - Task
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Frappe Cloud and ERPNext administration
-      - Bench CLI operations
-      - ERP system configuration
-      - Module customization
+    - Frappe Cloud and ERPNext administration
+    - Bench CLI operations
+    - ERP system configuration
+    - Module customization
     forbidden:
-      - Modify test files
-      - Non-Frappe application code
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Non-Frappe application code
+    - Update Linear (Tracking Agent)
   frontend-agent:
     name: frontend-agent
-    display_name: "Frontend Agent"
-    description: "Handles UI/UX implementation and client-side development"
-    model: sonnet
+    display_name: Frontend Agent
+    description: Handles UI/UX implementation and client-side development
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
-      - '*.test.*'
-      - '*.spec.*'
-      - backend/**
+    - tests/**
+    - test/**
+    - '*.test.*'
+    - '*.spec.*'
+    - backend/**
     exclusive_access: []
     responsibilities:
-      - UI/UX implementation
-      - React/Next.js/Vue development
-      - Client-side state management
-      - Component development
-      - Frontend routing and navigation
+    - UI/UX implementation
+    - React/Next.js/Vue development
+    - Client-side state management
+    - Component development
+    - Frontend routing and navigation
     forbidden:
-      - Modify test files (Test Writer/Auditor owns tests)
-      - Update Linear issues (Tracking Agent)
-      - Commit to git (Tracking Agent)
-      - Backend API implementation (Backend Agent)
-      - Database operations (Backend Agent)
-
+    - Modify test files (Test Writer/Auditor owns tests)
+    - Update Linear issues (Tracking Agent)
+    - Commit to git (Tracking Agent)
+    - Backend API implementation (Backend Agent)
+    - Database operations (Backend Agent)
   homelab-architect:
     name: homelab-architect
-    display_name: "Homelab Architect"
-    description: "Expert homelab network architect for Colin's Mac + Workhorse AI workstation. Use PROACTIVELY for any network topology, architecture, troubleshooting, segmentation, routing, DNS/DHCP, VLAN design, firewall policy, or infrastructure planning tasks. Already knows Colin's complete infrastructure (22 services, P2P 10GbE, VLAN 10 homelab, RTX 5090 GPU compute). Specializes in transforming chaotic home labs into production-grade, observable, maintainable networks for single operators."
-    model: sonnet
+    display_name: Homelab Architect
+    description: Expert homelab network architect for Colin's Mac + Workhorse AI workstation.
+      Use PROACTIVELY for any network topology, architecture, troubleshooting, segmentation,
+      routing, DNS/DHCP, VLAN design, firewall policy, or infrastructure planning
+      tasks. Already knows Colin's complete infrastructure (22 services, P2P 10GbE,
+      VLAN 10 homelab, RTX 5090 GPU compute). Specializes in transforming chaotic
+      home labs into production-grade, observable, maintainable networks for single
+      operators.
+    model: opus
     tools:
-      - Write
-      - Read
-      - Glob
-      - Grep
-      - WebSearch
-      - WebFetch
-      - mcp__ref
-      - mcp__exasearch
-      - mcp__perplexity-ask
+    - Write
+    - Read
+    - Glob
+    - Grep
+    - WebSearch
+    - WebFetch
+    - mcp__ref
+    - mcp__exasearch
+    - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
-      - src/**
-      - tests/**
+    - src/**
+    - tests/**
     exclusive_access: []
     responsibilities:
-      - Homelab network architecture planning
-      - Infrastructure topology design
-      - VLAN and routing configuration design
-      - Network troubleshooting and optimization
+    - Homelab network architecture planning
+    - Infrastructure topology design
+    - VLAN and routing configuration design
+    - Network troubleshooting and optimization
     forbidden:
-      - Write application code (implementation agents)
-      - Modify test files (Test Writer/Auditor)
-      - Execute deployments (DevOps Agent)
-      - Update Linear (Tracking Agent)
-
+    - Write application code (implementation agents)
+    - Modify test files (Test Writer/Auditor)
+    - Execute deployments (DevOps Agent)
+    - Update Linear (Tracking Agent)
   jupyter-agent:
     name: jupyter-agent
-    display_name: "Jupyter Agent"
-    description: "Jupyter Lab/Notebook operations, kernel management, AI/ML workflows, GPU integration"
-    model: sonnet
+    display_name: Jupyter Agent
+    description: Jupyter Lab/Notebook operations, kernel management, AI/ML workflows,
+      GPU integration
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Jupyter Lab/Notebook operations
-      - Kernel management
-      - AI/ML workflow setup
-      - GPU integration for notebooks
+    - Jupyter Lab/Notebook operations
+    - Kernel management
+    - AI/ML workflow setup
+    - GPU integration for notebooks
     forbidden:
-      - Modify test files
-      - Production application code
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Production application code
+    - Update Linear (Tracking Agent)
   onrate-agent:
     name: onrate-agent
-    display_name: "Onrate Agent"
-    description: "Onrate network monitoring, cellular performance metrics, latency analysis, throughput optimization"
-    model: claude-sonnet-4-5-20250929
+    display_name: Onrate Agent
+    description: Onrate network monitoring, cellular performance metrics, latency
+      analysis, throughput optimization
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Onrate network monitoring setup
-      - Cellular performance metrics analysis
-      - Latency and throughput optimization
-      - Network performance reporting
+    - Onrate network monitoring setup
+    - Cellular performance metrics analysis
+    - Latency and throughput optimization
+    - Network performance reporting
     forbidden:
-      - Modify test files
-      - Application code
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application code
+    - Update Linear (Tracking Agent)
   planning-agent:
     name: planning-agent
-    display_name: "Planning Agent"
-    description: "Breaks down epics and creates implementation plans"
-    model: sonnet
+    display_name: Planning Agent
+    description: Breaks down epics and creates implementation plans
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - NotebookEdit
-      - WebFetch
-      - WebSearch
-      - Task
-      - TodoWrite
-      - SlashCommand
-      - mcp__linear-server
-      - mcp__github
-      - mcp__supabase
-      - mcp__ref
-      - mcp__exasearch
-      - mcp__perplexity-ask
-      - mcp__claude-reviewer
-      - mcp__chrome-devtools
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - NotebookEdit
+    - WebFetch
+    - WebSearch
+    - Task
+    - TodoWrite
+    - SlashCommand
+    - mcp__linear-server
+    - mcp__github
+    - mcp__supabase
+    - mcp__ref
+    - mcp__exasearch
+    - mcp__perplexity-ask
+    - mcp__claude-reviewer
+    - mcp__chrome-devtools
     delegates_to:
-      - backend-agent
-      - browser-agent
-      - debug-agent
-      - devops-agent
-      - frontend-agent
-      - researcher-agent
-      - seo-agent
-      - software-architect
-      - test-auditor-agent
-      - test-writer-agent
-      - tracking-agent
+    - backend-agent
+    - browser-agent
+    - debug-agent
+    - devops-agent
+    - frontend-agent
+    - researcher-agent
+    - seo-agent
+    - software-architect
+    - test-auditor-agent
+    - test-writer-agent
+    - tracking-agent
     cannot_access:
-      - src/**
-      - tests/**
-      - test/**
+    - src/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Break down epics into implementation plans
-      - Delegate work to specialist agents
-      - Update Master Dashboard job tracking
-      - Select appropriate TDD workflow variation
-      - Coordinate agent handoffs and task delegation
+    - Break down epics into implementation plans
+    - Delegate work to specialist agents
+    - Update Master Dashboard job tracking
+    - Select appropriate TDD workflow variation
+    - Coordinate agent handoffs and task delegation
     forbidden:
-      - Direct implementation (use Write/Edit except .project-context.md)
-      - Linear updates via MCP (Tracking Agent handles this)
-      - Git operations (Tracking Agent handles this)
-      - Write code or tests (delegate to dev/test agents)
-      - Create Linear issues (Research Agent does this)
-
+    - Direct implementation (use Write/Edit except .project-context.md)
+    - Linear updates via MCP (Tracking Agent handles this)
+    - Git operations (Tracking Agent handles this)
+    - Write code or tests (delegate to dev/test agents)
+    - Create Linear issues (Research Agent does this)
   prometheus-agent:
     name: prometheus-agent
-    display_name: "Prometheus Agent"
-    description: "Prometheus metrics collection, PromQL queries, alerting rules, TSDB management"
-    model: claude-sonnet-4-5-20250929
+    display_name: Prometheus Agent
+    description: Prometheus metrics collection, PromQL queries, alerting rules, TSDB
+      management
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Prometheus metrics collection setup
-      - PromQL query development
-      - Alerting rules configuration
-      - TSDB management
+    - Prometheus metrics collection setup
+    - PromQL query development
+    - Alerting rules configuration
+    - TSDB management
     forbidden:
-      - Modify test files
-      - Application code (Backend/Frontend agents)
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application code (Backend/Frontend agents)
+    - Update Linear (Tracking Agent)
   qa-agent:
     name: qa-agent
-    display_name: "Qa Agent"
-    description: "Creates and maintains test suites and validates implementations"
-    model: sonnet
+    display_name: Qa Agent
+    description: Creates and maintains test suites and validates implementations
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access: []
     exclusive_access: []
     responsibilities:
-      - Create and maintain test suites (archived - see test-writer-agent)
-      - Validate implementations
-      - Report quality issues to Planning Agent
+    - Create and maintain test suites (archived - see test-writer-agent)
+    - Validate implementations
+    - Report quality issues to Planning Agent
     forbidden:
-      - Write production code (implementation agents)
-      - Update Linear (Tracking Agent)
-
+    - Write production code (implementation agents)
+    - Update Linear (Tracking Agent)
   researcher-agent:
     name: researcher-agent
-    display_name: "Researcher Agent"
-    description: "Gathers information and provides technical research"
-    model: sonnet
+    display_name: Researcher Agent
+    description: Gathers information and provides technical research
+    model: opus
     tools:
-      - Write
-      - Read
-      - Glob
-      - Grep
-      - WebSearch
-      - WebFetch
-      - mcp__ref
-      - mcp__exasearch
-      - mcp__perplexity-ask
+    - Write
+    - Read
+    - Glob
+    - Grep
+    - WebSearch
+    - WebFetch
+    - mcp__ref
+    - mcp__exasearch
+    - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
-      - src/**
-      - tests/**
+    - src/**
+    - tests/**
     exclusive_access: []
     responsibilities:
-      - Gather technical information and research
-      - Execute RAEP (Research Agent Enrichment Protocol)
-      - Validate approaches using ref.tools and Perplexity
-      - Generate XML stories for downstream agents
-      - Create dual-format output (TLDR + full research)
+    - Gather technical information and research
+    - Execute RAEP (Research Agent Enrichment Protocol)
+    - Validate approaches using ref.tools and Perplexity
+    - Generate XML stories for downstream agents
+    - Create dual-format output (TLDR + full research)
     forbidden:
-      - Write production code (implementation agents own this)
-      - Make implementation decisions (Planning Agent coordinates)
-      - Update Linear directly (Tracking Agent)
-      - Execute git operations (Tracking Agent)
-      - Modify test files (Test Writer/Auditor agents)
-
+    - Write production code (implementation agents own this)
+    - Make implementation decisions (Planning Agent coordinates)
+    - Update Linear directly (Tracking Agent)
+    - Execute git operations (Tracking Agent)
+    - Modify test files (Test Writer/Auditor agents)
   seo-agent:
     name: seo-agent
-    display_name: "Seo Agent"
-    description: "Optimizes content for search engines and web performance"
-    model: sonnet
+    display_name: Seo Agent
+    description: Optimizes content for search engines and web performance
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
-      - backend/**
+    - tests/**
+    - test/**
+    - backend/**
     exclusive_access: []
     responsibilities:
-      - Optimize content for search engines
-      - Technical SEO implementation
-      - Meta tags and structured data
-      - Web performance optimization
+    - Optimize content for search engines
+    - Technical SEO implementation
+    - Meta tags and structured data
+    - Web performance optimization
     forbidden:
-      - Modify test files (Test Writer/Auditor)
-      - Backend API development (Backend Agent)
-      - Update Linear issues (Tracking Agent)
-
+    - Modify test files (Test Writer/Auditor)
+    - Backend API development (Backend Agent)
+    - Update Linear issues (Tracking Agent)
   software-architect:
     name: software-architect
-    display_name: "Software Architect"
-    description: "Expert software architect planner. Use PROACTIVELY for all stack and architecture research and selection."
-    model: sonnet
+    display_name: Software Architect
+    description: Expert software architect planner. Use PROACTIVELY for all stack
+      and architecture research and selection.
+    model: opus
     tools:
-      - Write
-      - Read
-      - Glob
-      - Grep
-      - WebSearch
-      - WebFetch
-      - mcp__ref
-      - mcp__exasearch
-      - mcp__perplexity-ask
+    - Write
+    - Read
+    - Glob
+    - Grep
+    - WebSearch
+    - WebFetch
+    - mcp__ref
+    - mcp__exasearch
+    - mcp__perplexity-ask
     delegates_to: []
     cannot_access:
-      - src/**
-      - tests/**
+    - src/**
+    - tests/**
     exclusive_access: []
     responsibilities:
-      - System architecture planning
-      - Tech stack research and selection
-      - Component design and integration
-      - Architecture decision documentation
+    - System architecture planning
+    - Tech stack research and selection
+    - Component design and integration
+    - Architecture decision documentation
     forbidden:
-      - Write production code (implementation agents)
-      - Create Linear issues (Research Agent)
-      - Modify tests (Test Writer/Auditor)
-      - Execute git operations (Tracking Agent)
-
+    - Write production code (implementation agents)
+    - Create Linear issues (Research Agent)
+    - Modify tests (Test Writer/Auditor)
+    - Execute git operations (Tracking Agent)
   test-auditor-agent:
     name: test-auditor-agent
-    display_name: "Test Auditor Agent"
-    description: "Audits existing tests for quality and catches happy-path bias"
-    model: sonnet
+    display_name: Test Auditor Agent
+    description: Audits existing tests for quality and catches happy-path bias
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Glob
-      - Grep
-      - Task
-      - TodoWrite
+    - Bash
+    - Read
+    - Glob
+    - Grep
+    - Task
+    - TodoWrite
     delegates_to: []
     cannot_access:
-      - src/**
+    - src/**
     exclusive_access: []
     responsibilities:
-      - Audit existing tests for quality
-      - Identify happy-path bias in test coverage
-      - Validate test completeness
-      - Ensure edge cases are tested
+    - Audit existing tests for quality
+    - Identify happy-path bias in test coverage
+    - Validate test completeness
+    - Ensure edge cases are tested
     forbidden:
-      - Modify source code (implementation agents own this)
-      - Write new tests (Test Writer Agent owns creation)
-      - Update Linear issues (Tracking Agent)
-      - Commit to git (Tracking Agent)
-
+    - Modify source code (implementation agents own this)
+    - Write new tests (Test Writer Agent owns creation)
+    - Update Linear issues (Tracking Agent)
+    - Commit to git (Tracking Agent)
   test-writer-agent:
     name: test-writer-agent
-    display_name: "Test Writer Agent"
-    description: "Writes comprehensive tests before implementation (TDD Phase 3)"
-    model: sonnet
+    display_name: Test Writer Agent
+    description: Writes comprehensive tests before implementation (TDD Phase 3)
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - NotebookEdit
-      - Task
-      - TodoWrite
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - NotebookEdit
+    - Task
+    - TodoWrite
     delegates_to: []
     cannot_access:
-      - src/**
-      - frontend/**
-      - backend/**
+    - src/**
+    - frontend/**
+    - backend/**
     exclusive_access:
-      - tests/**
-      - test/**
-      - '*.test.*'
-      - '*.spec.*'
+    - tests/**
+    - test/**
+    - '*.test.*'
+    - '*.spec.*'
     responsibilities:
-      - Write comprehensive tests before implementation (TDD Phase 3)
-      - Create test scripts from acceptance criteria
-      - Validate implementations against test suites
-      - Ensure test coverage for all features
+    - Write comprehensive tests before implementation (TDD Phase 3)
+    - Create test scripts from acceptance criteria
+    - Validate implementations against test suites
+    - Ensure test coverage for all features
     forbidden:
-      - Modify source code (implementation agents own this)
-      - Update Linear issues (Tracking Agent)
-      - Commit to git (Tracking Agent)
-      - Deploy code (DevOps Agent)
-
+    - Modify source code (implementation agents own this)
+    - Update Linear issues (Tracking Agent)
+    - Commit to git (Tracking Agent)
+    - Deploy code (DevOps Agent)
   tracking-agent:
     name: tracking-agent
-    display_name: "Tracking Agent"
-    description: "Manages project tracking and documentation"
+    display_name: Tracking Agent
+    description: Manages project tracking and documentation
     model: haiku
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - mcp__linear-server
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - mcp__linear-server
     delegates_to: []
     cannot_access: []
     exclusive_access: []
     responsibilities:
-      - Manage project tracking and documentation
-      - Update Linear issues
-      - Execute git operations (commits, branches, PRs)
-      - Create pull requests
+    - Manage project tracking and documentation
+    - Update Linear issues
+    - Execute git operations (commits, branches, PRs)
+    - Create pull requests
     forbidden:
-      - Write code or tests (dev/test agents own this)
-      - Make implementation decisions (Planning Agent)
-      - Deploy infrastructure (DevOps Agent)
-
+    - Write code or tests (dev/test agents own this)
+    - Make implementation decisions (Planning Agent)
+    - Deploy infrastructure (DevOps Agent)
   traefik-agent:
     name: traefik-agent
-    display_name: "Traefik Agent"
-    description: "Manage Traefik v3 reverse proxy configuration, routing rules, middleware chains, and service discovery for Docker-based infrastructure"
-    model: sonnet
+    display_name: Traefik Agent
+    description: Manage Traefik v3 reverse proxy configuration, routing rules, middleware
+      chains, and service discovery for Docker-based infrastructure
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Traefik v3 reverse proxy configuration
-      - Routing rules and middleware chains
-      - Service discovery setup
-      - Docker-based infrastructure proxy management
+    - Traefik v3 reverse proxy configuration
+    - Routing rules and middleware chains
+    - Service discovery setup
+    - Docker-based infrastructure proxy management
     forbidden:
-      - Modify test files
-      - Application development (Backend/Frontend agents)
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application development (Backend/Frontend agents)
+    - Update Linear (Tracking Agent)
   traycer-agent:
     name: traycer-agent
-    display_name: "Traycer Agent"
-    description: "Coordinates agent workflows and manages project orchestration"
-    model: sonnet
+    display_name: Traycer Agent
+    description: Coordinates agent workflows and manages project orchestration
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
-      - mcp__linear-server
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
+    - mcp__linear-server
     delegates_to: []
     cannot_access: []
     exclusive_access: []
     responsibilities:
-      - Coordinate agent workflows
-      - Manage project orchestration
-      - High-level task delegation
+    - Coordinate agent workflows
+    - Manage project orchestration
+    - High-level task delegation
     forbidden:
-      - Direct implementation (delegates to specialists)
-      - Modify test files (Test Writer/Auditor)
-      - Git operations (Tracking Agent)
-
+    - Direct implementation (delegates to specialists)
+    - Modify test files (Test Writer/Auditor)
+    - Git operations (Tracking Agent)
   unifios-agent:
     name: unifios-agent
-    display_name: "Unifios Agent"
-    description: "UniFi OS management and configuration specialist. Manages UniFi network devices, controllers, and Dream Machine configurations. Use for UniFi Dream Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall rules, wireless settings, network topology planning, security policy configuration, and performance optimization. Expert in UniFi switches, access points, gateways, controller management, and backup/restore operations."
-    model: sonnet
+    display_name: Unifios Agent
+    description: UniFi OS management and configuration specialist. Manages UniFi network
+      devices, controllers, and Dream Machine configurations. Use for UniFi Dream
+      Machine (UDM/UDM-Pro), network device management, VLAN configuration, firewall
+      rules, wireless settings, network topology planning, security policy configuration,
+      and performance optimization. Expert in UniFi switches, access points, gateways,
+      controller management, and backup/restore operations.
+    model: opus
     tools:
-      - Read
-      - Write
-      - Edit
-      - Bash
-      - Glob
-      - Grep
-      - WebFetch
-      - mcp__ref
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Grep
+    - WebFetch
+    - mcp__ref
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - UniFi OS management and configuration
-      - Network device management
-      - VLAN and firewall configuration
-      - UniFi Dream Machine administration
+    - UniFi OS management and configuration
+    - Network device management
+    - VLAN and firewall configuration
+    - UniFi Dream Machine administration
     forbidden:
-      - Modify test files
-      - Application development
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application development
+    - Update Linear (Tracking Agent)
   unraid-agent:
     name: unraid-agent
-    display_name: "Unraid Agent"
-    description: "Unraid NAS system specialist managing array operations, Docker containers, VMs, cache pools, parity checks, and storage configuration. Expert in filesystem maintenance (XFS/BTRFS/ZFS), hardware setup (HBA mode, ECC RAM), security hardening, backup strategies, and performance tuning. Use for Unraid server management, troubleshooting, array expansion, disk replacement, plugin management, network configuration, and system optimization. Validates all operations against official Unraid documentation (docs.unraid.net) for versions 6.11-7.2+."
-    model: sonnet
+    display_name: Unraid Agent
+    description: Unraid NAS system specialist managing array operations, Docker containers,
+      VMs, cache pools, parity checks, and storage configuration. Expert in filesystem
+      maintenance (XFS/BTRFS/ZFS), hardware setup (HBA mode, ECC RAM), security hardening,
+      backup strategies, and performance tuning. Use for Unraid server management,
+      troubleshooting, array expansion, disk replacement, plugin management, network
+      configuration, and system optimization. Validates all operations against official
+      Unraid documentation (docs.unraid.net) for versions 6.11-7.2+.
+    model: opus
     tools:
-      - Read
-      - Write
-      - Edit
-      - Bash
-      - Glob
-      - Grep
-      - WebFetch
-      - mcp__ref
+    - Read
+    - Write
+    - Edit
+    - Bash
+    - Glob
+    - Grep
+    - WebFetch
+    - mcp__ref
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Unraid NAS system management
-      - Array operations and storage configuration
-      - Docker/VM management on Unraid
-      - System troubleshooting and optimization
+    - Unraid NAS system management
+    - Array operations and storage configuration
+    - Docker/VM management on Unraid
+    - System troubleshooting and optimization
     forbidden:
-      - Modify test files
-      - Application code
-      - Update Linear (Tracking Agent)
-
+    - Modify test files
+    - Application code
+    - Update Linear (Tracking Agent)
   vllm-agent:
     name: vllm-agent
-    display_name: "Vllm Agent"
-    description: "Deploy and manage vLLM inference server for high-performance LLM serving with OpenAI-compatible API, model management, performance optimization, and integration with agentic workflows"
-    model: sonnet
+    display_name: Vllm Agent
+    description: Deploy and manage vLLM inference server for high-performance LLM
+      serving with OpenAI-compatible API, model management, performance optimization,
+      and integration with agentic workflows
+    model: opus
     tools:
-      - Bash
-      - Read
-      - Write
-      - Edit
-      - Glob
-      - Grep
+    - Bash
+    - Read
+    - Write
+    - Edit
+    - Glob
+    - Grep
     delegates_to: []
     cannot_access:
-      - tests/**
-      - test/**
+    - tests/**
+    - test/**
     exclusive_access: []
     responsibilities:
-      - Deploy and manage vLLM inference server
-      - Model management
-      - Performance optimization
-      - OpenAI-compatible API integration
+    - Deploy and manage vLLM inference server
+    - Model management
+    - Performance optimization
+    - OpenAI-compatible API integration
     forbidden:
-      - Modify test files
-      - Application business logic (Backend Agent)
-      - Update Linear (Tracking Agent)
+    - Modify test files
+    - Application business logic (Backend Agent)
+    - Update Linear (Tracking Agent)
